@@ -1383,6 +1383,9 @@ void ConcurrentMark::checkpointRootsFinal(bool clear_all_soft_refs) {
   g1h->gc_tracer_cm()->report_object_count_after_gc(&is_alive);
 }
 
+
+
+
 // Base class of the closures that finalize and verify the
 // liveness counting data.
 class CMCountDataClosureBase: public HeapRegionClosure {
@@ -1421,6 +1424,9 @@ public:
     _ct_bs((CardTableModRefBS*) (g1h->barrier_set())),
     _region_bm(region_bm), _card_bm(card_bm) { }
 };
+
+
+
 
 // Closure that calculates the # live objects per region. Used
 // for verification purposes during the cleanup pause.
@@ -1523,6 +1529,9 @@ public:
 
   size_t region_marked_bytes() const { return _region_marked_bytes; }
 };
+
+
+
 
 // Heap region closure used for verifying the counting data
 // that was accumulated concurrently and aggregated during
@@ -1649,6 +1658,9 @@ public:
     return false;
   }
 };
+
+
+
 
 class G1ParVerifyFinalCountTask: public AbstractGangTask {
 protected:
@@ -3179,6 +3191,9 @@ void ConcurrentMark::verify_no_cset_oops() {
 }
 #endif // PRODUCT
 
+
+
+
 // Aggregate the counting data that was constructed concurrently
 // with marking.
 class AggregateCountDataHRClosure: public HeapRegionClosure {
@@ -3285,6 +3300,9 @@ class AggregateCountDataHRClosure: public HeapRegionClosure {
     return false;
   }
 };
+
+
+
 
 class G1AggregateCountDataTask: public AbstractGangTask {
 protected:
@@ -4594,6 +4612,9 @@ void CMTask::do_marking_step(double time_target_ms,
   _claimed = false;
 }
 
+
+
+
 CMTask::CMTask(uint worker_id,
                ConcurrentMark* cm,
                size_t* marked_bytes,
@@ -4617,6 +4638,9 @@ CMTask::CMTask(uint worker_id,
 
   _marking_step_diffs_ms.add(0.5);
 }
+
+
+
 
 // These are formatting macros that are used below to ensure
 // consistent formatting. The *_H_* versions are used to format the

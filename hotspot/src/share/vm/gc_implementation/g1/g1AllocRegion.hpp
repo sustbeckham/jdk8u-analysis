@@ -210,6 +210,9 @@ public:
   : G1AllocRegion("Survivor GC Alloc Region", false /* bot_updates */) { }
 };
 
+
+
+
 class OldGCAllocRegion : public G1AllocRegion {
 protected:
   virtual HeapRegion* allocate_new_region(size_t word_size, bool force);
@@ -218,6 +221,11 @@ public:
   OldGCAllocRegion()
   : G1AllocRegion("Old GC Alloc Region", true /* bot_updates */) { }
 
+
+
+
+  // 实现在g1AllocRegion.cpp.......
+  //
   // This specialization of release() makes sure that the last card that has
   // been allocated into has been completely filled by a dummy object.  This
   // avoids races when remembered set scanning wants to update the BOT of the
@@ -225,6 +233,9 @@ public:
   // allocating into that card at the same time.
   virtual HeapRegion* release();
 };
+
+
+
 
 class ar_ext_msg : public err_msg {
 public:

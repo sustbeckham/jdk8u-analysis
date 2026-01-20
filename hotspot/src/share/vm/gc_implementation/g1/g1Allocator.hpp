@@ -104,6 +104,7 @@ protected:
   OldGCAllocRegion _old_gc_alloc_region;
 
   HeapRegion* _retained_old_gc_alloc_region;
+
 public:
   G1DefaultAllocator(G1CollectedHeap* heap) : G1Allocator(heap), _retained_old_gc_alloc_region(NULL) { }
 
@@ -114,9 +115,15 @@ public:
   virtual void release_gc_alloc_regions(uint no_of_gc_workers, EvacuationInfo& evacuation_info);
   virtual void abandon_gc_alloc_regions();
 
+
+
+
   virtual bool is_retained_old_region(HeapRegion* hr) {
     return _retained_old_gc_alloc_region == hr;
   }
+
+
+
 
   virtual MutatorAllocRegion* mutator_alloc_region(AllocationContext_t context) {
     return &_mutator_alloc_region;

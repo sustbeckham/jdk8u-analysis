@@ -358,11 +358,21 @@ class HeapRegion: public G1OffsetTableContigSpace {
   // sequence, otherwise -1.
   uint hrm_index() const { return _hrm_index; }
 
+
+
+
   // The number of bytes marked live in the region in the last marking phase.
   size_t marked_bytes()    { return _prev_marked_bytes; }
+
+
+
+
   size_t live_bytes() {
     return (top() - prev_top_at_mark_start()) * HeapWordSize + marked_bytes();
   }
+
+
+
 
   // The number of bytes counted in the next marking.
   size_t next_marked_bytes() { return _next_marked_bytes; }
@@ -381,6 +391,10 @@ class HeapRegion: public G1OffsetTableContigSpace {
     return used_at_mark_start_bytes - marked_bytes();
   }
 
+
+
+  // 计算Region内可回收的大小(不仅仅是垃圾空间，还包括未分配内存的部分，也就是top和end之间的内容)。
+  //
   // Return the amount of bytes we'll reclaim if we collect this
   // region. This includes not only the known garbage bytes in the
   // region but also any unallocated space in it, i.e., [top, end),
@@ -391,13 +405,22 @@ class HeapRegion: public G1OffsetTableContigSpace {
     return capacity() - known_live_bytes;
   }
 
+
+
+
   // An upper bound on the number of live bytes in the region.
   size_t max_live_bytes() { return used() - garbage_bytes(); }
+
+
+
 
   void add_to_marked_bytes(size_t incr_bytes) {
     _next_marked_bytes = _next_marked_bytes + incr_bytes;
     assert(_next_marked_bytes <= used(), "invariant" );
   }
+
+
+
 
   void zero_marked_bytes()      {
     _prev_marked_bytes = _next_marked_bytes = 0;

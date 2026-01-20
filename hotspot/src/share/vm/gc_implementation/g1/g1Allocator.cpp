@@ -39,6 +39,9 @@ void G1DefaultAllocator::release_mutator_alloc_region() {
   assert(_mutator_alloc_region.get() == NULL, "post-condition");
 }
 
+
+
+
 void G1Allocator::reuse_retained_old_region(EvacuationInfo& evacuation_info,
                                             OldGCAllocRegion* old,
                                             HeapRegion** retained_old) {
@@ -72,6 +75,9 @@ void G1Allocator::reuse_retained_old_region(EvacuationInfo& evacuation_info,
     evacuation_info.set_alloc_regions_used_before(retained_region->used());
   }
 }
+
+
+
 
 void G1DefaultAllocator::init_gc_alloc_regions(EvacuationInfo& evacuation_info) {
   assert_at_safepoint(true /* should_be_vm_thread */);

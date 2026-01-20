@@ -6790,10 +6790,15 @@ HeapRegion* G1CollectedHeap::new_gc_alloc_region(size_t word_size,
   return NULL;
 }
 
+
+
+
 void G1CollectedHeap::retire_gc_alloc_region(HeapRegion* alloc_region,
                                              size_t allocated_bytes,
                                              InCSetState dest) {
+  // 是否处于[初始标记]阶段
   bool during_im = g1_policy()->during_initial_mark_pause();
+
   alloc_region->note_end_of_copying(during_im);
   g1_policy()->record_bytes_copied_during_gc(allocated_bytes);
   if (dest.is_young()) {
@@ -6803,6 +6808,9 @@ void G1CollectedHeap::retire_gc_alloc_region(HeapRegion* alloc_region,
   }
   _hr_printer.retire(alloc_region);
 }
+
+
+
 
 // Heap region set verification
 

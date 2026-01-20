@@ -64,6 +64,9 @@ static int order_regions(HeapRegion** hr1p, HeapRegion** hr2p) {
   return order_regions(*hr1p, *hr2p);
 }
 
+
+
+
 CollectionSetChooser::CollectionSetChooser() :
   // The line below is the worst bit of C++ hackery I've ever written
   // (Detlefs, 11/23).  You should think of it as equivalent to
@@ -84,9 +87,15 @@ CollectionSetChooser::CollectionSetChooser() :
                   100), true /* C_Heap */),
     _curr_index(0), _length(0), _first_par_unreserved_idx(0),
     _region_live_threshold_bytes(0), _remaining_reclaimable_bytes(0) {
-  _region_live_threshold_bytes =
-    HeapRegion::GrainBytes * (size_t) G1MixedGCLiveThresholdPercent / 100;
+
+    // G1MixedGCLiveThresholdPercent的默认值为85，它的含义是old generation的region中，存活对象的占比。如果存活对象高于这个值，将不会被选入CSet。
+    // 当前这边应用下Region默认情况是16M，这意味着单个Region存活对象高于13.6MB的将不会被选入CSet(回收价值不大)。
+    _region_live_threshold_bytes =
+      HeapRegion::GrainBytes * (size_t) G1MixedGCLiveThresholdPercent / 100;
 }
+
+
+
 
 #ifndef PRODUCT
 void CollectionSetChooser::verify() {

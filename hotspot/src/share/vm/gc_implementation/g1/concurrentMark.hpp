@@ -864,6 +864,9 @@ public:
     return task_card_bm;
   }
 
+
+
+
   // Returns the array containing the marked bytes for each region,
   // for the given worker or task id.
   size_t* count_marked_bytes_array_for(uint worker_id) {
@@ -873,6 +876,9 @@ public:
     assert(marked_bytes_array != NULL, "uninitialized");
     return marked_bytes_array;
   }
+
+
+
 
   // Returns the index in the liveness accounting card table bitmap
   // for the given address
@@ -932,6 +938,9 @@ protected:
   // Verification routine
   void verify_count_data();
 };
+
+
+
 
 // A class representing a marking task.
 class CMTask : public TerminatorTerminator {
@@ -1213,6 +1222,9 @@ public:
   void increase_objs_found_on_bitmap() { ++_objs_found_on_bitmap; }
 #endif // _MARKING_STATS_
 };
+
+
+
 
 // Class that's used to to print out per-region liveness
 // information. It's currently used at the end of marking and also

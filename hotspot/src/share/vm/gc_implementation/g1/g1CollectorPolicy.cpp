@@ -82,6 +82,9 @@ static double non_young_other_cost_per_region_ms_defaults[] = {
   1.0, 0.7, 0.7, 0.5, 0.5, 0.42, 0.42, 0.30
 };
 
+
+
+
 G1CollectorPolicy::G1CollectorPolicy() :
   _parallel_gc_threads(G1CollectedHeap::use_parallel_gc_threads()
                         ? ParallelGCThreads : 1),
@@ -248,6 +251,8 @@ G1CollectorPolicy::G1CollectorPolicy() :
     }
   }
 
+
+  // G1的默认暂停时间在此处被设置为200毫秒。
   // Then, if the pause time target parameter was not set, set it to
   // the default value.
   if (FLAG_IS_DEFAULT(MaxGCPauseMillis)) {
@@ -262,12 +267,15 @@ G1CollectorPolicy::G1CollectorPolicy() :
     }
   }
 
+
+  // G1的默认暂停间隔在此处被设置为201毫秒。
   // Then, if the interval parameter was not set, set it according to
   // the pause time target (this will also deal with the case when the
   // pause time target is the default value).
   if (FLAG_IS_DEFAULT(GCPauseIntervalMillis)) {
     FLAG_SET_DEFAULT(GCPauseIntervalMillis, MaxGCPauseMillis + 1);
   }
+
 
   // Finally, make sure that the two parameters are consistent.
   if (MaxGCPauseMillis >= GCPauseIntervalMillis) {
@@ -279,10 +287,14 @@ G1CollectorPolicy::G1CollectorPolicy() :
     vm_exit_during_initialization(buffer);
   }
 
+
+  // G1MMUTrackerQueue用来做GC预测...
   double max_gc_time = (double) MaxGCPauseMillis / 1000.0;
   double time_slice  = (double) GCPauseIntervalMillis / 1000.0;
   _mmu_tracker = new G1MMUTrackerQueue(time_slice, max_gc_time);
 
+
+  // G1ConfidencePercent的默认值为50，用于表述预测的置信率(有点难理解)。对应的，_sigma就是50%。
   uintx confidence_perc = G1ConfidencePercent;
   // Put an artificial ceiling on this so that it's not set to a silly value.
   if (confidence_perc > 100) {
@@ -291,6 +303,7 @@ G1CollectorPolicy::G1CollectorPolicy() :
             "it's been updated to %u", confidence_perc);
   }
   _sigma = (double) confidence_perc / 100.0;
+
 
   // start conservatively (around 50ms is about right)
   _concurrent_mark_remark_times_ms->add(0.05);
@@ -1543,6 +1556,9 @@ G1CollectorPolicy::decide_on_conc_mark_initiation() {
   }
 }
 
+
+
+
 class KnownGarbageClosure: public HeapRegionClosure {
   G1CollectedHeap* _g1h;
   CollectionSetChooser* _hrSorted;
@@ -1569,6 +1585,10 @@ public:
   }
 };
 
+
+
+
+// 默认使用了多线程并发回收(默认开启且在8核情况下回收线程数量为8)，所以默认使用该闭包。
 class ParKnownGarbageHRClosure: public HeapRegionClosure {
   G1CollectedHeap* _g1h;
   CSetChooserParUpdater _cset_updater;
@@ -1585,7 +1605,7 @@ public:
       // We will skip any region that's currently used as an old GC
       // alloc region (we should not consider those for collection
       // before we fill them up).
-      if (_cset_updater.should_add(r) && !_g1h->is_old_gc_alloc_region(r)) {
+      if (_cset_updater.should_add(r) && !_g1h->is_old_gc_alloc_region(r)) {  // is_old_gc_alloc_region这个好像是个单独预留的region...还得再看看
         _cset_updater.add_region(r);
       }
     }
@@ -1593,6 +1613,11 @@ public:
   }
 };
 
+
+
+
+
+// 默认使用了多线程并发回收(默认开启且在8核情况下回收线程数量为8)，所以不使用该闭包。
 class ParKnownGarbageTask: public AbstractGangTask {
   CollectionSetChooser* _hrSorted;
   uint _chunk_size;
@@ -1613,11 +1638,16 @@ public:
   }
 };
 
+
+
+
 void
 G1CollectorPolicy::record_concurrent_mark_cleanup_end(int no_of_gc_threads) {
   _collectionSetChooser->clear();
 
   uint region_num = _g1->num_regions();
+
+  // 是否使用了多线程并发回收(默认开启且在8核情况下回收线程数量为8)。
   if (G1CollectedHeap::use_parallel_gc_threads()) {
     const uint OverpartitionFactor = 4;
     uint WorkUnit;

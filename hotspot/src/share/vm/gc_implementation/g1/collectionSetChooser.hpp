@@ -46,7 +46,7 @@ class CollectionSetChooser: public CHeapObj<mtGC> {
   }
   void regions_trunc_to(uint i)  { _regions.trunc_to((uint) i); }
 
-  // The index of the next candidate old region to be considered for
+  // The index of the next candidate(候选) old region to be considered for
   // addition to the CSet.
   uint _curr_index;
 
@@ -64,7 +64,7 @@ class CollectionSetChooser: public CHeapObj<mtGC> {
   // collection.
   size_t _region_live_threshold_bytes;
 
-  // The sum of reclaimable bytes over all the regions in the CSet chooser.
+  // The sum of reclaimable(可回收的) bytes over all the regions in the CSet chooser.
   size_t _remaining_reclaimable_bytes;
 
 public:
@@ -102,6 +102,12 @@ public:
 
   void sort_regions();
 
+
+
+  // _region_live_threshold_bytes的大小受限于G1MixedGCLiveThresholdPercent(默认为85)。
+  // 以16MB的老年代Region来举例，则意味着单个Region存活对象高于13.6MB的将不会被选入CSet(回收价值不大)。
+  // 注意此处忽略了巨大Region(特殊场景单独处理)。
+  //
   // Determine whether to add the given region to the CSet chooser or
   // not. Currently, we skip humongous regions (we never add them to
   // the CSet, we only reclaim them during cleanup) and regions whose
@@ -112,6 +118,9 @@ public:
     return !hr->isHumongous() &&
             hr->live_bytes() < _region_live_threshold_bytes;
   }
+
+
+
 
   // Returns the number candidate old regions added
   uint length() { return _length; }
@@ -150,6 +159,9 @@ public:
   void verify() PRODUCT_RETURN;
 };
 
+
+
+
 class CSetChooserParUpdater : public StackObj {
 private:
   CollectionSetChooser* _chooser;
@@ -175,6 +187,8 @@ public:
 
   void add_region(HeapRegion* hr) {
     if (_parallel) {
+      // G1默认都是并行的，走这个并行分支
+
       if (_cur_chunk_idx == _cur_chunk_end) {
         _cur_chunk_idx = _chooser->claim_array_chunk(_chunk_size);
         _cur_chunk_end = _cur_chunk_idx + _chunk_size;

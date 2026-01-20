@@ -85,6 +85,9 @@ void G1AllocRegion::fill_up_remaining_space(HeapRegion* alloc_region,
          "post-condition");
 }
 
+
+
+
 void G1AllocRegion::retire(bool fill_up) {
   assert(_alloc_region != NULL, ar_ext_msg(this, "not initialized properly"));
 
@@ -110,6 +113,9 @@ void G1AllocRegion::retire(bool fill_up) {
   }
   trace("retired");
 }
+
+
+
 
 HeapWord* G1AllocRegion::new_alloc_region_and_allocate(size_t word_size,
                                                        bool force) {
@@ -184,6 +190,9 @@ void G1AllocRegion::update_alloc_region(HeapRegion* alloc_region) {
   trace("updated");
 }
 
+
+
+
 HeapRegion* G1AllocRegion::release() {
   trace("releasing");
   HeapRegion* alloc_region = _alloc_region;
@@ -194,6 +203,9 @@ HeapRegion* G1AllocRegion::release() {
   trace("released");
   return (alloc_region == _dummy_region) ? NULL : alloc_region;
 }
+
+
+
 
 #if G1_ALLOC_REGION_TRACING
 void G1AllocRegion::trace(const char* str, size_t word_size, HeapWord* result) {
@@ -268,10 +280,16 @@ HeapRegion* OldGCAllocRegion::allocate_new_region(size_t word_size,
   return _g1h->new_gc_alloc_region(word_size, count(), InCSetState::Old);
 }
 
+
+
+
 void OldGCAllocRegion::retire_region(HeapRegion* alloc_region,
                                      size_t allocated_bytes) {
   _g1h->retire_gc_alloc_region(alloc_region, allocated_bytes, InCSetState::Old);
 }
+
+
+
 
 HeapRegion* OldGCAllocRegion::release() {
   HeapRegion* cur = get();

@@ -1201,11 +1201,17 @@ public:
   bool free_regions_coming() { return _free_regions_coming; }
   void wait_while_free_regions_coming();
 
+
+
+
   // Determine whether the given region is one that we are using as an
   // old GC alloc region.
   bool is_old_gc_alloc_region(HeapRegion* hr) {
     return _allocator->is_retained_old_region(hr);
   }
+
+
+
 
   // Perform a collection of the heap; intended for use in implementing
   // "System.gc".  This probably implies as full a collection as the

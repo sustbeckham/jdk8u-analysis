@@ -37,6 +37,10 @@
 #include <new>
 
 class PtrQueueSet;
+
+
+
+
 class PtrQueue VALUE_OBJ_CLASS_SPEC {
   friend class VMStructs;
 
@@ -156,6 +160,9 @@ public:
 
 };
 
+
+
+
 class BufferNode {
   size_t _index;
   BufferNode* _next;
@@ -197,6 +204,9 @@ public:
     return (void*)((char*)p - aligned_size());
   }
 };
+
+
+
 
 // A PtrQueueSet represents resources common to a set of pointer queues.
 // In particular, the individual queues allocate buffers from this shared
