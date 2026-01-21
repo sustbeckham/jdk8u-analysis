@@ -211,7 +211,10 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   // Stop any onging concurrent work and prepare for exit.
   virtual void stop() {}
 
+
   MemRegion reserved_region() const { return _reserved; }
+
+
   address base() const { return (address)reserved_region().start(); }
 
   virtual size_t capacity() const = 0;

@@ -51,14 +51,27 @@ class G1CMIsAliveClosure: public BoolObjectClosure {
   bool do_object_b(oop obj);
 };
 
-// A generic CM bit map.  This is essentially a wrapper around the BitMap
+
+
+
+// 并发标记使用的位图模型。
+//
+// A generic CM bit map.  This is essentially(本质上) a wrapper around the BitMap
 // class, with one bit per (1<<_shifter) HeapWords.
 
 class CMBitMapRO VALUE_OBJ_CLASS_SPEC {
  protected:
+
+  // 起始内存和位图大小
   HeapWord* _bmStartWord;      // base address of range covered by map
   size_t    _bmWordSize;       // map size (in #HeapWords covered)
+
+
+  // 这里实际是0
   const int _shifter;          // map to char or bit
+
+
+  // 理解成一个Map<size_t, bool>的结构即可
   BitMap    _bm;               // the bit map itself
 
  public:
@@ -67,14 +80,21 @@ class CMBitMapRO VALUE_OBJ_CLASS_SPEC {
 
   enum { do_yield = true };
 
+
+  // 起始内存和位图大小
   // inquiries
   HeapWord* startWord()   const { return _bmStartWord; }
   size_t    sizeInWords() const { return _bmWordSize;  }
+
+
+  // 这种写法没问题的，指针直接和数量想加等于是在当前地址之上+对应的byte*8, 所以能取到最后一个HeapWord
   // the following is one past the last word in space
   HeapWord* endWord()     const { return _bmStartWord + _bmWordSize; }
 
+
   // read marks
 
+  // 因为HeapWord本身就是按照8字节对齐的，所以这里自动的得到了原位图1/64大小的读写操作
   bool isMarked(HeapWord* addr) const {
     assert(_bmStartWord <= addr && addr < (_bmStartWord + _bmWordSize),
            "outside underlying space?");
@@ -96,15 +116,30 @@ class CMBitMapRO VALUE_OBJ_CLASS_SPEC {
   HeapWord* getNextUnmarkedWordAddress(const HeapWord* addr,
                                        const HeapWord* limit = NULL) const;
 
+
+  // 位图起始地址按照指定offset偏移
   // conversion utilities
   HeapWord* offsetToHeapWord(size_t offset) const {
     return _bmStartWord + (offset << _shifter);
   }
+
+
+
+
+  // 地址转位图offset
   size_t heapWordToOffset(const HeapWord* addr) const {
     return pointer_delta(addr, _bmStartWord) >> _shifter;
   }
+
+
+
+
   int heapWordDiffToOffsetDiff(size_t diff) const;
 
+
+
+
+  // 位图中下一个对象的大小。由于对象的大小不固定(最少8字节，最大很大)，所以实际位图的大小要比1/64感觉更小。
   // The argument addr should be the start address of a valid object
   HeapWord* nextObject(HeapWord* addr) {
     oop obj = (oop) addr;
@@ -113,11 +148,17 @@ class CMBitMapRO VALUE_OBJ_CLASS_SPEC {
     return res;
   }
 
+
+
+
   void print_on_error(outputStream* st, const char* prefix) const;
 
   // debugging
   NOT_PRODUCT(bool covers(MemRegion rs) const;)
 };
+
+
+
 
 class CMBitMapMappingChangedListener : public G1MappingChangedListener {
  private:
@@ -130,19 +171,33 @@ class CMBitMapMappingChangedListener : public G1MappingChangedListener {
   virtual void on_commit(uint start_idx, size_t num_regions, bool zero_filled);
 };
 
+
+
+
 class CMBitMap : public CMBitMapRO {
  private:
   CMBitMapMappingChangedListener _listener;
 
  public:
+
+  // 这其实也就是之前说的，位图是对应映射区域大小的1/64
   static size_t compute_size(size_t heap_size);
+
+  // 这其实也就是之前说的，位图是对应映射区域大小的1/64
   // Returns the amount of bytes on the heap between two marks in the bitmap.
   static size_t mark_distance();
 
   CMBitMap() : CMBitMapRO(LogMinObjAlignment), _listener() { _listener.set_bitmap(this); }
 
+
+
+
+  // 看着是在初始化当前并发标记类的时候完成了初始化
   // Initializes the underlying BitMap to cover the given area.
   void initialize(MemRegion heap, G1RegionToSpaceMapper* storage);
+
+
+
 
   // Write marks.
   inline void mark(HeapWord* addr);
@@ -165,6 +220,9 @@ class CMBitMap : public CMBitMapRO {
   // Clear the whole mark bitmap.
   void clearAll();
 };
+
+
+
 
 // Represents a marking stack used by ConcurrentMarking in the G1 collector.
 class CMMarkStack VALUE_OBJ_CLASS_SPEC {

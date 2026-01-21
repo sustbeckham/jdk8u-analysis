@@ -1927,6 +1927,10 @@ G1RegionToSpaceMapper* G1CollectedHeap::create_aux_memory_mapper(const char* des
   return result;
 }
 
+
+
+
+// JVM启动时初始化
 jint G1CollectedHeap::initialize() {
   CollectedHeap::pre_initialize();
   os::enable_vtime();
@@ -2138,6 +2142,9 @@ jint G1CollectedHeap::initialize() {
 
   return JNI_OK;
 }
+
+
+
 
 void G1CollectedHeap::stop() {
   // Stop all concurrent threads. We do this to make sure these threads

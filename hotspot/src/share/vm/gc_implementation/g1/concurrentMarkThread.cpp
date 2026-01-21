@@ -63,6 +63,10 @@ public:
   }
 };
 
+
+
+
+// 疑似并发标记的第五阶段: cleanup
 class CMCleanUp: public VoidClosure {
   ConcurrentMark* _cm;
 public:
@@ -74,6 +78,7 @@ public:
     _cm->cleanup();
   }
 };
+
 
 
 
@@ -184,9 +189,13 @@ void ConcurrentMarkThread::run() {
           os::sleep(current_thread, sleep_time_ms, false);
         }
 
+
+        // 疑似并发标记的第五阶段: cleanup
         CMCleanUp cl_cl(_cm);
         VM_CGC_Operation op(&cl_cl, "GC cleanup", false /* needs_pll */);
         VMThread::execute(&op);
+
+
       } else {
         // We don't want to update the marking status if a GC pause
         // is already underway.

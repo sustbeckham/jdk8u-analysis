@@ -125,8 +125,12 @@ class G1PageBasedVirtualSpace VALUE_OBJ_CLASS_SPEC {
   // Destruction
   ~G1PageBasedVirtualSpace();
 
+
+  // 返回的是当前space总的space的字节数
   // Amount of reserved memory.
   size_t reserved_size() const;
+
+
   // Memory used in this virtual space.
   size_t committed_size() const;
   // Memory left to use/expand in this virtual space.
@@ -134,10 +138,12 @@ class G1PageBasedVirtualSpace VALUE_OBJ_CLASS_SPEC {
 
   bool contains(const void* p) const;
 
+
   MemRegion reserved() {
     MemRegion x((HeapWord*)_low_boundary, reserved_size() / HeapWordSize);
     return x;
   }
+
 
   void release();
 

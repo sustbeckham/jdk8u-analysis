@@ -113,23 +113,42 @@ void CMBitMapRO::print_on_error(outputStream* st, const char* prefix) const {
   _bm.print_on_error(st, prefix);
 }
 
+
+
+
+// 这其实也就是之前说的，位图是对应映射区域大小的1/64
 size_t CMBitMap::compute_size(size_t heap_size) {
   return ReservedSpace::allocation_align_size_up(heap_size / mark_distance());
 }
 
+
+
+
+// MinObjAlignmentInBytes = 8
+// BitsPerByte = 8
+// 这其实也就是之前说的，位图是对应映射区域大小的1/64
 size_t CMBitMap::mark_distance() {
   return MinObjAlignmentInBytes * BitsPerByte;
 }
 
-void CMBitMap::initialize(MemRegion heap, G1RegionToSpaceMapper* storage) {
-  _bmStartWord = heap.start();
-  _bmWordSize = heap.word_size();
 
+
+
+// 看着是在初始化当前并发标记类的时候完成了初始化
+void CMBitMap::initialize(MemRegion heap, G1RegionToSpaceMapper* storage) {
+  _bmStartWord = heap.start();     // heap起始地址
+  _bmWordSize = heap.word_size();  // 这里应该是heap最多可以容纳多少个HeapWord
+
+
+  // 基于heap的起始位置和可容纳的HeapWord个数初始化位图
   _bm.set_map((BitMap::bm_word_t*) storage->reserved().start());
   _bm.set_size(_bmWordSize >> _shifter);
 
   storage->set_mapping_changed_listener(&_listener);
 }
+
+
+
 
 void CMBitMapMappingChangedListener::on_commit(uint start_region, size_t num_regions, bool zero_filled) {
   if (zero_filled) {
@@ -523,6 +542,9 @@ uint ConcurrentMark::scale_parallel_threads(uint n_par_threads) {
   return MAX2((n_par_threads + 2) / 4, 1U);
 }
 
+
+
+
 ConcurrentMark::ConcurrentMark(G1CollectedHeap* g1h, G1RegionToSpaceMapper* prev_bitmap_storage, G1RegionToSpaceMapper* next_bitmap_storage) :
   _g1h(g1h),
   _markBitMap1(),
@@ -585,8 +607,10 @@ ConcurrentMark::ConcurrentMark(G1CollectedHeap* g1h, G1RegionToSpaceMapper* prev
                            "heap end = " INTPTR_FORMAT, p2i(_heap_start), p2i(_heap_end));
   }
 
+
   _markBitMap1.initialize(g1h->reserved_region(), prev_bitmap_storage);
   _markBitMap2.initialize(g1h->reserved_region(), next_bitmap_storage);
+
 
   // Create & start a ConcurrentMark thread.
   _cmThread = new ConcurrentMarkThread(this);
@@ -761,6 +785,9 @@ ConcurrentMark::ConcurrentMark(G1CollectedHeap* g1h, G1RegionToSpaceMapper* prev
   set_non_marking_state();
   _completed_initialization = true;
 }
+
+
+
 
 void ConcurrentMark::reset() {
   // Starting values for these two. This should be called in a STW
@@ -1405,6 +1432,8 @@ protected:
   void set_bit_for_region(HeapRegion* hr) {
     assert(!hr->continuesHumongous(), "should have filtered those out");
 
+
+    // hrm_index()为region的编号(便于管理和映射)。
     BitMap::idx_t index = (BitMap::idx_t) hr->hrm_index();
     if (!hr->startsHumongous()) {
       // Normal (non-humongous) case: just set the bit.
@@ -1729,6 +1758,13 @@ public:
   int failures() const { return _failures; }
 };
 
+
+
+
+// Oracle文档描述的该阶段要做的事情
+// * 存活对象计数。统计每个区域的存活对象信息，供evacuation使用。STW
+// * 清理 Remembered Sets(RSet)，标记阶段能确定一些空区域，它们的 RSet 可以清理。STW
+// * 释放空区域。并发执行。
 // Closure that finalizes the liveness counting data.
 // Used during the cleanup pause.
 // Sets the bits corresponding to the interval [NTAMS, top]
@@ -1745,6 +1781,7 @@ class FinalCountDataUpdateClosure: public CMCountDataClosureBase {
 
   bool doHeapRegion(HeapRegion* hr) {
 
+    // 巨大对象不会涉及到移动什么的，忽略
     if (hr->continuesHumongous()) {
       // We will ignore these here and process them when their
       // associated "starts humongous" region is processed (see
@@ -1763,6 +1800,8 @@ class FinalCountDataUpdateClosure: public CMCountDataClosureBase {
 
     // Mark the allocated-since-marking portion...
     if (ntams < top) {
+
+      // 实现在父类CMCountDataClosureBase中
       // This definitely means the region has live objects.
       set_bit_for_region(hr);
 
@@ -1799,6 +1838,9 @@ class FinalCountDataUpdateClosure: public CMCountDataClosureBase {
   }
 };
 
+
+
+
 class G1ParFinalCountTask: public AbstractGangTask {
 protected:
   G1CollectedHeap* _g1h;
@@ -1833,6 +1875,7 @@ public:
                                                 _actual_card_bm);
 
     if (G1CollectedHeap::use_parallel_gc_threads()) {
+      // 走这个分支
       _g1h->heap_region_par_iterate_chunked(&final_update_cl,
                                             worker_id,
                                             _n_workers,
@@ -1842,6 +1885,9 @@ public:
     }
   }
 };
+
+
+
 
 class G1ParNoteEndTask;
 
@@ -2002,6 +2048,10 @@ public:
 
 };
 
+
+
+
+// 疑似并发标记的第五阶段: cleanup
 void ConcurrentMark::cleanup() {
   // world is stopped at this checkpoint
   assert(SafepointSynchronize::is_at_safepoint(),
@@ -2016,12 +2066,17 @@ void ConcurrentMark::cleanup() {
 
   g1h->verify_region_sets_optional();
 
+
+  // VerifyDuringGC是个诊断选项默认为false, 所以此处可以暂时不用看
   if (VerifyDuringGC) {
     HandleMark hm;  // handle scope
     Universe::heap()->prepare_for_verify();
     Universe::verify(VerifyOption_G1UsePrevMarking,
                      " VerifyDuringGC:(before)");
   }
+  // 不用看截止
+
+
   g1h->check_bitmaps("Cleanup Start");
 
   G1CollectorPolicy* g1p = G1CollectedHeap::heap()->g1_policy();
@@ -2036,7 +2091,9 @@ void ConcurrentMark::cleanup() {
   // Do counting once more with the world stopped for good measure.
   G1ParFinalCountTask g1_par_count_task(g1h, &_region_bm, &_card_bm);
 
+
   if (G1CollectedHeap::use_parallel_gc_threads()) {
+   // 走该分支
    assert(g1h->check_heap_region_claim_values(HeapRegion::InitialClaimValue),
            "sanity check");
 
@@ -2055,6 +2112,8 @@ void ConcurrentMark::cleanup() {
     g1_par_count_task.work(0);
   }
 
+
+  // VerifyDuringGC是个诊断选项默认为false, 所以此处可以暂时不用看
   if (VerifyDuringGC) {
     // Verify that the counting data accumulated during marking matches
     // that calculated by walking the marking bitmap.
@@ -2083,6 +2142,8 @@ void ConcurrentMark::cleanup() {
 
     guarantee(g1_par_verify_task.failures() == 0, "Unexpected accounting failures");
   }
+  // 不用看截止
+
 
   size_t start_used_bytes = g1h->used();
   g1h->set_marking_complete();

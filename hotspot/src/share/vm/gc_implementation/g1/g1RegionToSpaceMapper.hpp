@@ -29,6 +29,9 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 
+
+
+
 class G1MappingChangedListener VALUE_OBJ_CLASS_SPEC {
  public:
   // Fired after commit of the memory, i.e. the memory this listener is registered
@@ -37,6 +40,9 @@ class G1MappingChangedListener VALUE_OBJ_CLASS_SPEC {
   // when called.
   virtual void on_commit(uint start_idx, size_t num_regions, bool zero_filled) = 0;
 };
+
+
+
 
 // Maps region based commit/uncommit requests to the underlying page sized virtual
 // space.
@@ -55,12 +61,17 @@ class G1RegionToSpaceMapper : public CHeapObj<mtGC> {
 
   void fire_on_commit(uint start_idx, size_t num_regions, bool zero_filled);
  public:
+
+
   MemRegion reserved() { return _storage.reserved(); }
+
 
   size_t reserved_size() { return _storage.reserved_size(); }
   size_t committed_size() { return _storage.committed_size(); }
 
+
   void set_mapping_changed_listener(G1MappingChangedListener* listener) { _listener = listener; }
+
 
   virtual ~G1RegionToSpaceMapper() {
     _commit_map.resize(0, /* in_resource_area */ false);

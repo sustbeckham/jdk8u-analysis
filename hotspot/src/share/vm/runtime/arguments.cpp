@@ -1387,18 +1387,46 @@ void Arguments::set_cms_and_parnew_gc_flags() {
 }
 #endif // INCLUDE_ALL_GCS
 
+
+
+
+// 1. HeapWordSize的定义在globalDefinition.hpp。在64位操作系统下, 该值为8.
+// 2. ObjectAlignmentInBytes是系统参数, 在globals.hpp中定义, 值为8. 表示对象对齐大小(字节)。
 void set_object_alignment() {
   // Object alignment.
   assert(is_power_of_2(ObjectAlignmentInBytes), "ObjectAlignmentInBytes must be power of 2");
+
+
+  // 1. ObjectAlignmentInBytes是系统参数, 在globals.hpp中定义, 值为8. 表示对象对齐大小(字节)。
+  // 2. https://hllvm-group.iteye.com/group/topic/41307
+  //    Oracle/Sun JDK及OpenJDK里的HotSpot VM的话默认GC堆里的对象用8字节对齐。这个不用你做任何事情就已经如此了。
+  //    可以配置-XX:ObjectAlignmentInBytes=<nnn>来改变这个默认值，不过最小不能小于8不然HotSpot有些内部实现会出错。
+  //    配置到16、32之类的都有。这在一个JVM实例里是全局配置，不能对单个Java对象个别配置。
   MinObjAlignmentInBytes     = ObjectAlignmentInBytes;
   assert(MinObjAlignmentInBytes >= HeapWordsPerLong * HeapWordSize, "ObjectAlignmentInBytes value is too small");
+
+
+  // A. HeapWordSize的定义在globalDefinition.hpp。在64位操作系统下, 该值为8. 所以这里的MinObjAlignment是1.
+  // B. 翻译成白话就是, 上边表示按照8字节对齐, 这里表示按照对象按照1个HeapWordSize对齐
   MinObjAlignment            = MinObjAlignmentInBytes / HeapWordSize;
   assert(MinObjAlignmentInBytes == MinObjAlignment * HeapWordSize, "ObjectAlignmentInBytes value is incorrect");
+
+
+  // 字节对齐大小掩码。7=111
   MinObjAlignmentInBytesMask = MinObjAlignmentInBytes - 1;
 
+
+  // exact_log2的定义在globalDefinitions.hpp, 取最接近的对数值, 此处log2_intptr(8)返回3
   LogMinObjAlignmentInBytes  = exact_log2(ObjectAlignmentInBytes);
+
+
+  // LogHeapWordSize在64位为3, 32位为2. 所以这里的LogMinObjAlignment是0.
   LogMinObjAlignment         = LogMinObjAlignmentInBytes - LogHeapWordSize;
 
+
+  // A. 这里最终算出的结果是34359738368, 这个值/1024/1024/1024=32, 即32G. 换算成指数是2的35次方
+  // B. LogMinObjAlignmentInBytes=3
+  // C. 根据之前的一些经验可知, 这里是在计算压缩指针情况下, 最大能支持的堆大小(压缩指针为int, 这里反映了最大寻址空间)。
   // Oop encoding heap max
   OopEncodingHeapMax = (uint64_t(max_juint) + 1) << LogMinObjAlignmentInBytes;
 
@@ -1407,6 +1435,9 @@ void set_object_alignment() {
   CompactibleFreeListSpace::set_cms_values();
 #endif // INCLUDE_ALL_GCS
 }
+
+
+
 
 bool verify_object_alignment() {
   // Object alignment.

@@ -40,6 +40,9 @@
 
 class MetaWord;
 
+
+
+
 class MemRegion VALUE_OBJ_CLASS_SPEC {
   friend class VMStructs;
 private:
@@ -48,12 +51,15 @@ private:
 
 public:
   MemRegion() : _start(NULL), _word_size(0) {};
+
   MemRegion(HeapWord* start, size_t word_size) :
     _start(start), _word_size(word_size) {};
+
   MemRegion(HeapWord* start, HeapWord* end) :
     _start(start), _word_size(pointer_delta(end, start)) {
     assert(end >= start, "incorrect constructor arguments");
   }
+
   MemRegion(MetaWord* start, MetaWord* end) :
     _start((HeapWord*)start), _word_size(pointer_delta(end, start)) {
     assert(end >= start, "incorrect constructor arguments");
@@ -99,6 +105,9 @@ public:
   void  operator delete(void* p);
   void  operator delete [](void* p);
 };
+
+
+
 
 // For iteration over MemRegion's.
 

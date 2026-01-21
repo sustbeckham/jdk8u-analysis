@@ -130,9 +130,11 @@ class BitMap VALUE_OBJ_CLASS_SPEC {
   // "in_resource_area" is true, else in the C heap.
   BitMap(idx_t size_in_bits, bool in_resource_area = true);
 
+
   // Set the map and size.
   void set_map(bm_word_t* map)      { _map = map; }
   void set_size(idx_t size_in_bits) { _size = size_in_bits; }
+
 
   // Allocates necessary data structure, either in the resource area
   // or in the C heap, as indicated by "in_resource_area."

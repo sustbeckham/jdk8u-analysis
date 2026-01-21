@@ -109,9 +109,16 @@ size_t G1PageBasedVirtualSpace::committed_size() const {
   return result;
 }
 
+
+
+
+// 这里为什么使用sizeof(char)? 因为char是c++中最小的数据类型大小为1字节，所以这里计算的就是总的space的字节数
 size_t G1PageBasedVirtualSpace::reserved_size() const {
   return pointer_delta(_high_boundary, _low_boundary, sizeof(char));
 }
+
+
+
 
 size_t G1PageBasedVirtualSpace::uncommitted_size()  const {
   return reserved_size() - committed_size();
