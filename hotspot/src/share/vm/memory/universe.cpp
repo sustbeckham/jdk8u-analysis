@@ -80,6 +80,7 @@
 #include "gc_implementation/g1/g1CollectedHeap.inline.hpp"
 #include "gc_implementation/g1/g1CollectorPolicy_ext.hpp"
 #include "gc_implementation/parallelScavenge/parallelScavengeHeap.hpp"
+#include "utilities/ostream.hpp"
 #endif // INCLUDE_ALL_GCS
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
@@ -640,6 +641,7 @@ void* Universe::non_oop_word() {
 }
 
 jint universe_init() {
+  tty->print_cr("[Fire] start init.");
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
   guarantee(1 << LogHeapWordSize == sizeof(HeapWord),
          "LogHeapWordSize is incorrect.");
