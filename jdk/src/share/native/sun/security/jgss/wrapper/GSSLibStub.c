@@ -34,6 +34,8 @@ const int TYPE_CRED_NAME = 10;
 const int TYPE_CRED_TIME = 11;
 const int TYPE_CRED_USAGE = 12;
 
+GSS_FUNCTION_TABLE_PTR ftab;
+
 /*
  * Class:     sun_security_jgss_wrapper_GSSLibStub
  * Method:    init
