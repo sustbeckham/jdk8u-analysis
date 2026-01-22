@@ -1,0 +1,75 @@
+## Starting langtools
+## Finished langtools (build time 00:00:00)
+
+## Starting hotspot
+make[2]: warning: -jN forced in submake: disabling jobserver mode.
+INFO: ENABLE_FULL_DEBUG_SYMBOLS=1
+INFO: ENABLE_FULL_DEBUG_SYMBOLS=1
+Making adlc
+Undefined symbols for architecture arm64:
+  "std::__1::locale::use_facet(std::__1::locale::id&) const", referenced from:
+      std::__1::ctype<char> const& std::__1::use_facet[abi:nn190102]<std::__1::ctype<char>>(std::__1::locale const&) in filebuff.o
+  "std::__1::ios_base::getloc() const", referenced from:
+      std::__1::basic_ios<char, std::__1::char_traits<char>>::widen[abi:nn190102](char) const in filebuff.o
+  "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>::__init(unsigned long, char)", referenced from:
+      std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>::basic_string[abi:nn190102](unsigned long, char) in filebuff.o
+  "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>::~basic_string()", referenced from:
+      std::__1::ostreambuf_iterator<char, std::__1::char_traits<char>> std::__1::__pad_and_output[abi:nn190102]<char, std::__1::char_traits<char>>(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char>>, char const*, char const*, char const*, std::__1::ios_base&, char) in filebuff.o
+  "std::__1::basic_ostream<char, std::__1::char_traits<char>>::sentry::sentry(std::__1::basic_ostream<char, std::__1::char_traits<char>>&)", referenced from:
+      std::__1::basic_ostream<char, std::__1::char_traits<char>>& std::__1::__put_character_sequence[abi:nn190102]<char, std::__1::char_traits<char>>(std::__1::basic_ostream<char, std::__1::char_traits<char>>&, char const*, unsigned long) in filebuff.o
+  "std::__1::basic_ostream<char, std::__1::char_traits<char>>::sentry::~sentry()", referenced from:
+      std::__1::basic_ostream<char, std::__1::char_traits<char>>& std::__1::__put_character_sequence[abi:nn190102]<char, std::__1::char_traits<char>>(std::__1::basic_ostream<char, std::__1::char_traits<char>>&, char const*, unsigned long) in filebuff.o
+  "std::__1::basic_ostream<char, std::__1::char_traits<char>>::operator<<(int)", referenced from:
+      printline(std::__1::basic_ostream<char, std::__1::char_traits<char>>&, char const*, int, char const*, int, int) in filebuff.o
+      printline(std::__1::basic_ostream<char, std::__1::char_traits<char>>&, char const*, int, char const*, int, int) in filebuff.o
+  "std::__1::ctype<char>::id", referenced from:
+      std::__1::ctype<char> const& std::__1::use_facet[abi:nn190102]<std::__1::ctype<char>>(std::__1::locale const&) in filebuff.o
+  "std::__1::locale::~locale()", referenced from:
+      std::__1::basic_ios<char, std::__1::char_traits<char>>::widen[abi:nn190102](char) const in filebuff.o
+  "std::__1::ios_base::clear(unsigned int)", referenced from:
+      std::__1::ios_base::setstate[abi:nn190102](unsigned int) in filebuff.o
+  "operator delete[](void*)", referenced from:
+      getRegMask(char const*) in archDesc.o
+      ArchDesc::calc_cost(__sFILE*, char const*, MatchList&, ProductionState&) in dfa.o
+      ArchDesc::calc_cost(__sFILE*, char const*, MatchList&, ProductionState&) in dfa.o
+      child_test(__sFILE*, MatchList&) in dfa.o
+      child_test(__sFILE*, MatchList&) in dfa.o
+      RegClass::declare_register_masks(__sFILE*) in formsopt.o
+      RegClass::build_register_masks(__sFILE*) in formsopt.o
+      ...
+  "operator delete(void*)", referenced from:
+      PreHeaderForm::~PreHeaderForm() in adlparse.o
+      HeaderForm::~HeaderForm() in adlparse.o
+      FileBuff::~FileBuff() in filebuff.o
+      FileBuffRegion::~FileBuffRegion() in filebuff.o
+      FileBuffRegion::merge(FileBuffRegion*) in filebuff.o
+      FileBuffRegion::merge(FileBuffRegion*) in filebuff.o
+      FileBuffRegion::merge(FileBuffRegion*) in filebuff.o
+      ...
+  "operator new[](unsigned long)", referenced from:
+      toUpper(char const*) in archDesc.o
+      getRegMask(char const*) in archDesc.o
+      ArchDesc::stack_or_reg_mask(OperandForm&) in archDesc.o
+      FileBuff::FileBuff(BufferedFile*, ArchDesc&) in filebuff.o
+      base_plus_suffix(char const*, char const*) in main.o
+      pipeline_reads_initializer(__sFILE*, NameList&, PipeClassForm*) in output_c.o
+      pipeline_res_stages_initializer(__sFILE*, PipelineForm*, NameList&, PipeClassForm*) in output_c.o
+      pipeline_res_stages_initializer(__sFILE*, PipelineForm*, NameList&, PipeClassForm*) in output_c.o
+      ...
+  "operator new(unsigned long)", referenced from:
+      ADLParser::instr_parse() in adlparse.o
+      ADLParser::instr_parse() in adlparse.o
+      ADLParser::oper_parse() in adlparse.o
+      ADLParser::opclass_parse() in adlparse.o
+      ADLParser::ins_attr_parse() in adlparse.o
+      ADLParser::op_attr_parse() in adlparse.o
+      ADLParser::source_parse() in adlparse.o
+      ...
+ld: symbol(s) not found for architecture arm64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+make[6]: *** [../generated/adfiles/adlc] Error 1
+make[5]: *** [ad_stuff] Error 2
+make[4]: *** [product] Error 2
+make[3]: *** [generic_build2] Error 2
+make[2]: *** [product] Error 2
+make[1]: *** [/Users/admin/core/opensource/openjdk-8u-fork/jdk8u-analysis/build/macosx-aarch64-normal-server-release/hotspot/_hotspot.timestamp] Error 2
