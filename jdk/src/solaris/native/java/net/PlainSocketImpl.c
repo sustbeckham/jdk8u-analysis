@@ -43,7 +43,7 @@
 #endif
 #ifdef __linux__
 #include <unistd.h>
-//MOZILLA #include <sys/sysctl.h>
+//MOZILLA  #include <sys/sysctl.h>
 #endif
 
 #include "jvm.h"
