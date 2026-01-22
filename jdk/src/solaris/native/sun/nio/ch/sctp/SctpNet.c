@@ -37,6 +37,13 @@
 #include "sun_nio_ch_sctp_SctpNet.h"
 #include "sun_nio_ch_sctp_SctpStdSocketOption.h"
 
+sctp_getladdrs_func* nio_sctp_getladdrs;
+sctp_freeladdrs_func* nio_sctp_freeladdrs;
+sctp_getpaddrs_func* nio_sctp_getpaddrs;
+sctp_freepaddrs_func* nio_sctp_freepaddrs;
+sctp_bindx_func* nio_sctp_bindx;
+sctp_peeloff_func* nio_sctp_peeloff;
+
 static jclass isaCls = 0;
 static jmethodID isaCtrID = 0;
 
