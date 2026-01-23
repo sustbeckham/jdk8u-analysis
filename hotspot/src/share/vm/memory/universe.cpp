@@ -803,6 +803,9 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
   return (char*)base; // also return NULL (don't care) for 32-bit VM
 }
 
+
+
+
 jint Universe::initialize_heap() {
 
   if (UseParallelGC) {
@@ -911,6 +914,9 @@ jint Universe::initialize_heap() {
   return JNI_OK;
 }
 
+
+
+
 void Universe::print_compressed_oops_mode(outputStream* st) {
   st->print("heap address: " PTR_FORMAT ", size: " SIZE_FORMAT " MB",
               Universe::heap()->base(), Universe::heap()->reserved_region().byte_size()/M);
@@ -927,6 +933,9 @@ void Universe::print_compressed_oops_mode(outputStream* st) {
 
   st->cr();
 }
+
+
+
 
 // Reserve the Java heap, which is now the same for all GCs.
 ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
