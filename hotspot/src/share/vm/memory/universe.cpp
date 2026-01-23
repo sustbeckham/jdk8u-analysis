@@ -643,6 +643,9 @@ void* Universe::non_oop_word() {
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
+  tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
+  tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
+
 
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
   guarantee(1 << LogHeapWordSize == sizeof(HeapWord),

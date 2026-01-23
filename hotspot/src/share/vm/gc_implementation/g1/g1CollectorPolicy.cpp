@@ -333,6 +333,9 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _collectionSetChooser = new CollectionSetChooser();
 }
 
+
+
+
 void G1CollectorPolicy::initialize_alignments() {
   _space_alignment = HeapRegion::GrainBytes;
   size_t card_table_alignment = GenRemSet::max_alignment_constraint(GenRemSet::CardTable);
