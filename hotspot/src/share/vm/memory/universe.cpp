@@ -645,6 +645,7 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] _LP64=%d.", _LP64);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
+  tty->print_cr("[Fire-Constant] _MSC_VER=%d.", _MSC_VER);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
 
 

@@ -92,12 +92,13 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _parallel_gc_threads(G1CollectedHeap::use_parallel_gc_threads()
                         ? ParallelGCThreads : 1),
 
+
+  // GC行为预测相关(后续单独分析)
+  // NumPrevPausesForHeuristics是配置在g1CollectorPolicy.hpp中的枚举，值为10。
   _recent_gc_times_ms(new TruncatedSeq(NumPrevPausesForHeuristics)),
   _stop_world_start(0.0),
-
   _concurrent_mark_remark_times_ms(new TruncatedSeq(NumPrevPausesForHeuristics)),
   _concurrent_mark_cleanup_times_ms(new TruncatedSeq(NumPrevPausesForHeuristics)),
-
   _alloc_rate_ms_seq(new TruncatedSeq(TruncatedSeqLength)),
   _prev_collection_pause_end_ms(0.0),
   _rs_length_diff_seq(new TruncatedSeq(TruncatedSeqLength)),
@@ -110,30 +111,37 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _cost_per_byte_ms_during_cm_seq(new TruncatedSeq(TruncatedSeqLength)),
   _constant_other_time_ms_seq(new TruncatedSeq(TruncatedSeqLength)),
   _young_other_cost_per_region_ms_seq(new TruncatedSeq(TruncatedSeqLength)),
-  _non_young_other_cost_per_region_ms_seq(
-                                         new TruncatedSeq(TruncatedSeqLength)),
+  _non_young_other_cost_per_region_ms_seq(new TruncatedSeq(TruncatedSeqLength)),
 
   _pending_cards_seq(new TruncatedSeq(TruncatedSeqLength)),
   _rs_lengths_seq(new TruncatedSeq(TruncatedSeqLength)),
 
+
+  // G1的最大暂停时间(这里还没初始化...虽然后面会初始化为默认值200ms, 但是这样在C++会有问题么...)
   _pause_time_target_ms((double) MaxGCPauseMillis),
 
+
+  // 表明当前GC是young还是mix(默认给true，如果是mix会修改)。
   _gcs_are_young(true),
+
 
   _during_marking(false),
   _in_marking_window(false),
   _in_marking_window_im(false),
 
-  _recent_prev_end_times_for_all_gcs_sec(
-                                new TruncatedSeq(NumPrevPausesForHeuristics)),
 
+  // GC行为预测相关(后续单独分析)
+  _recent_prev_end_times_for_all_gcs_sec(new TruncatedSeq(NumPrevPausesForHeuristics)),
   _recent_avg_pause_time_ratio(0.0),
+
 
   _initiate_conc_mark_if_possible(false),
   _during_initial_mark_pause(false),
   _last_young_gc(false),
   _last_gc_was_young(false),
 
+
+  // GC已使用&容量相关(eden、survivor、metaspace、整堆)
   _eden_used_bytes_before_gc(0),
   _survivor_used_bytes_before_gc(0),
   _heap_used_bytes_before_gc(0),
@@ -141,12 +149,16 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _eden_capacity_bytes_before_gc(0),
   _heap_capacity_bytes_before_gc(0),
 
+
+  // CSet相关(这里也能看出eden、survivor、old都有各自的CSet)
   _eden_cset_region_length(0),
   _survivor_cset_region_length(0),
   _old_cset_region_length(0),
 
+
   _collection_set(NULL),
   _collection_set_bytes_used_before(0),
+
 
   // Incremental CSet attributes
   _inc_cset_build_state(Inactive),
