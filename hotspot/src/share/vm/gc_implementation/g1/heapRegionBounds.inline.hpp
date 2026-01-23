@@ -24,6 +24,8 @@
 
 #include "gc_implementation/g1/heapRegionBounds.hpp"
 
+
+// Region限制的最小大小，常量定义在heapRegionBounds.hpp, 值为1M。
 size_t HeapRegionBounds::min_size() {
   return MIN_REGION_SIZE;
 }
@@ -32,6 +34,8 @@ size_t HeapRegionBounds::max_size() {
   return MAX_REGION_SIZE;
 }
 
+
+// 目标Region数量，常量定义在heapRegionBounds.hpp, 值为2048。
 size_t HeapRegionBounds::target_number() {
   return TARGET_REGION_NUMBER;
 }

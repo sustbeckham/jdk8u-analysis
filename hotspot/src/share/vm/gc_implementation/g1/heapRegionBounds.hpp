@@ -27,6 +27,8 @@
 
 class HeapRegionBounds : public AllStatic {
 private:
+
+  // Region限制的最小大小
   // Minimum region size; we won't go lower than that.
   // We might want to decrease this in the future, to deal with small
   // heaps a bit more efficiently.
@@ -39,6 +41,8 @@ private:
   // marking.
   static const size_t MAX_REGION_SIZE = 32 * 1024 * 1024;
 
+
+  // 目标Region数量
   // The automatic region size calculation will try to have around this
   // many regions in the heap (based on the min heap size).
   static const size_t TARGET_REGION_NUMBER = 2048;

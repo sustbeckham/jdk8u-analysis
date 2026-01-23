@@ -645,13 +645,19 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] _LP64=%d.", _LP64);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
-  tty->print_cr("[Fire-Constant] _MSC_VER=%d.", _MSC_VER);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
 
 
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
   tty->print_cr("[Fire-Constant] UseG1GC=%d.", UseG1GC);
+
+  tty->print_cr("[Fire-Constant] InitialHeapSize=%d.", InitialHeapSize);
+  tty->print_cr("[Fire-Constant] MaxHeapSize=%d.", MaxHeapSize);
+
+
+  // 确定没有引用的
+  // tty->print_cr("[Fire-Constant] _MSC_VER=%d.", _MSC_VER); error: '_MSC_VER' was not declared in this scope
 
 
   assert(!Universe::_fully_initialized, "called after initialize_vtables");

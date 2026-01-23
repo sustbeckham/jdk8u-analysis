@@ -171,10 +171,14 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _inc_cset_predicted_elapsed_time_ms(0.0),
   _inc_cset_predicted_elapsed_time_ms_diffs(0.0),
 
+
+  // 尝试验证了这个值编译就会报错(应是未定义，下面这段忽略)
 #ifdef _MSC_VER // the use of 'this' below gets a warning, make it go away
 #pragma warning( disable:4355 ) // 'this' : used in base member initializer list
 #endif // _MSC_VER
 
+
+  // GC行为预测相关(后续单独分析)
   _short_lived_surv_rate_group(new SurvRateGroup(this, "Short Lived",
                                                  G1YoungSurvRateNumRegionsSummary)),
   _survivor_surv_rate_group(new SurvRateGroup(this, "Survivor",
@@ -185,7 +189,10 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _recorded_survivor_tail(NULL),
   _survivors_age_table(true),
 
+
+  // 这个地方咋只有半个括号...但是编译还不报错
   _gc_overhead_perc(0.0) {
+
 
   // Set up the region size and associated fields. Given that the
   // policy is created before the heap, we have to set this up here,

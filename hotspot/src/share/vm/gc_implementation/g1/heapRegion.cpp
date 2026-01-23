@@ -104,10 +104,16 @@ size_t HeapRegion::max_region_size() {
   return HeapRegionBounds::max_size();
 }
 
+
+
+
 void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_heap_size) {
   uintx region_size = G1HeapRegionSize;
   if (FLAG_IS_DEFAULT(G1HeapRegionSize)) {
     size_t average_heap_size = (initial_heap_size + max_heap_size) / 2;
+
+    // HeapRegionBounds::target_number()为目标Region数量，常量定义在heapRegionBounds.hpp, 值为2048。
+    // HeapRegionBounds::min_size()为Region限制的最小大小，常量定义在heapRegionBounds.hpp, 值为1M。
     region_size = MAX2(average_heap_size / HeapRegionBounds::target_number(),
                        (uintx) HeapRegionBounds::min_size());
   }
@@ -147,6 +153,9 @@ void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_hea
   guarantee(CardsPerRegion == 0, "we should only set it once");
   CardsPerRegion = GrainBytes >> CardTableModRefBS::card_shift;
 }
+
+
+
 
 void HeapRegion::reset_after_compaction() {
   G1OffsetTableContigSpace::reset_after_compaction();
