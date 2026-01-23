@@ -37,6 +37,7 @@
 #include "memory/space.inline.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/orderAccess.inline.hpp"
+#include "utilities/ostream.hpp"
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
@@ -116,13 +117,16 @@ void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_hea
     // HeapRegionBounds::min_size()为Region限制的最小大小，常量定义在heapRegionBounds.hpp, 值为1M。
     region_size = MAX2(average_heap_size / HeapRegionBounds::target_number(),
                        (uintx) HeapRegionBounds::min_size());
+    tty->print_cr("[Fire-G1-Region] region_size(step avg)=%d.", region_size/1024/1024);
   }
 
+  // Region大小按照对数截取再放大，确保Region大小是2的N次方
   int region_size_log = log2_long((jlong) region_size);
   // Recalculate the region size to make sure it's a power of
   // 2. This means that region_size is the largest power of 2 that's
   // <= what we've calculated so far.
   region_size = ((uintx)1 << region_size_log);
+  tty->print_cr("[Fire-G1-Region] region_size(step log)=%d.", region_size/1024/1024);
 
   // Now make sure that we don't go over or under our limits.
   if (region_size < HeapRegionBounds::min_size()) {

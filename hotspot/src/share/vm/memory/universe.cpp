@@ -652,8 +652,8 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
   tty->print_cr("[Fire-Constant] UseG1GC=%d.", UseG1GC);
 
-  tty->print_cr("[Fire-Constant] InitialHeapSize=%d.", InitialHeapSize);
-  tty->print_cr("[Fire-Constant] MaxHeapSize=%d.", MaxHeapSize);
+  tty->print_cr("[Fire-Constant] InitialHeapSize=%d.", InitialHeapSize/1024/1024);
+  tty->print_cr("[Fire-Constant] MaxHeapSize=%d.", MaxHeapSize/1024/1024);
 
 
   // 确定没有引用的
