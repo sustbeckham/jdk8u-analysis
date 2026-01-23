@@ -642,9 +642,15 @@ void* Universe::non_oop_word() {
 
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
+  tty->print_cr("[Fire-Constant] _LP64=%d.", _LP64);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
-  tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
+  tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
+
+
+  tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
+  tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
+  tty->print_cr("[Fire-Constant] UseG1GC=%d.", UseG1GC);
 
 
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
@@ -808,6 +814,7 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
 
 jint Universe::initialize_heap() {
 
+  // 问题分析多用G1，这个if分支不看
   if (UseParallelGC) {
 #if INCLUDE_ALL_GCS
     Universe::_collectedHeap = new ParallelScavengeHeap();
@@ -817,6 +824,7 @@ jint Universe::initialize_heap() {
 
   } else if (UseG1GC) {
 #if INCLUDE_ALL_GCS
+    // 日志确认INCLUDE_ALL_GCS=1，所以G1的策略类确认是G1CollectorPolicyExt
     G1CollectorPolicyExt* g1p = new G1CollectorPolicyExt();
     g1p->initialize_all();
     G1CollectedHeap* g1h = new G1CollectedHeap(g1p);

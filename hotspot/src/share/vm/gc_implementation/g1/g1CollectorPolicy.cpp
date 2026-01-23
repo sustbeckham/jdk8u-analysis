@@ -85,7 +85,10 @@ static double non_young_other_cost_per_region_ms_defaults[] = {
 
 
 
+// 从universe.cpp初始化而来
 G1CollectorPolicy::G1CollectorPolicy() :
+
+  // 默认开启并行线程，ParallelGCThreads在8核下是8个线程，超过8核有个算法但是此时总线程略低于核数。
   _parallel_gc_threads(G1CollectedHeap::use_parallel_gc_threads()
                         ? ParallelGCThreads : 1),
 

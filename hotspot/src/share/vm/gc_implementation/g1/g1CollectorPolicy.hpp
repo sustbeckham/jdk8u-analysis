@@ -163,6 +163,9 @@ public:
   }
 };
 
+
+
+
 class G1CollectorPolicy: public CollectorPolicy {
 private:
   // either equal to the number of parallel threads, if ParallelGCThreads
