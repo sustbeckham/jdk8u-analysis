@@ -119,7 +119,10 @@ void ConcurrentMarkThread::run() {
           gclog_or_tty->print_cr("[GC concurrent-root-region-scan-start]");
         }
 
+
+        // 并发标记的第二阶段: 根Region扫描
         _cm->scanRootRegions();
+
 
         double scan_end = os::elapsedTime();
         if (G1Log::fine()) {
@@ -138,9 +141,13 @@ void ConcurrentMarkThread::run() {
       int iter = 0;
       do {
         iter++;
+
+
+        // 并发标记的第三阶段: 并发标记
         if (!cm()->has_aborted()) {
           _cm->markFromRoots();
         }
+
 
         double mark_end_time = os::elapsedVTime();
         double mark_end_sec = os::elapsedTime();
@@ -159,9 +166,13 @@ void ConcurrentMarkThread::run() {
                                       mark_end_sec - mark_start_sec);
           }
 
+
+          // 并发标记的第四阶段: Remark
           CMCheckpointRootsFinalClosure final_cl(_cm);
           VM_CGC_Operation op(&final_cl, "GC remark", true /* needs_pll */);
           VMThread::execute(&op);
+
+
         }
         if (cm()->restart_for_overflow()) {
           if (G1TraceMarkStackOverflow) {

@@ -642,6 +642,8 @@ void* Universe::non_oop_word() {
 
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
+  tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
+
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
   guarantee(1 << LogHeapWordSize == sizeof(HeapWord),
          "LogHeapWordSize is incorrect.");

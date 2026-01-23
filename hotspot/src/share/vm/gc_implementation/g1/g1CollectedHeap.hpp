@@ -176,6 +176,9 @@ class G1RegionMappingChangedListener : public G1MappingChangedListener {
   virtual void on_commit(uint start_idx, size_t num_regions, bool zero_filled);
 };
 
+
+
+
 class G1CollectedHeap : public SharedHeap {
   friend class VM_CollectForMetadataAllocation;
   friend class VM_G1CollectForAllocation;

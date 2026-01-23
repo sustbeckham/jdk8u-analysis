@@ -211,6 +211,9 @@ void CollectedHeap::collect_as_vm_thread(GCCause::Cause cause) {
   }
 }
 
+
+
+
 void CollectedHeap::pre_initialize() {
   // Used for ReduceInitialCardMarks (when COMPILER2 is used);
   // otherwise remains unused.
@@ -221,6 +224,9 @@ void CollectedHeap::pre_initialize() {
   assert(_defer_initial_card_mark == false, "Who would set it?");
 #endif
 }
+
+
+
 
 #ifndef PRODUCT
 void CollectedHeap::check_for_bad_heap_word_value(HeapWord* addr, size_t size) {

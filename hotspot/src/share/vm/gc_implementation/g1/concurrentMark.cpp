@@ -1283,6 +1283,9 @@ void ConcurrentMark::scanRootRegions() {
   }
 }
 
+
+
+
 void ConcurrentMark::markFromRoots() {
   // we might be tempted to assert that:
   // assert(asynch == !SafepointSynchronize::is_at_safepoint(),
@@ -1316,6 +1319,9 @@ void ConcurrentMark::markFromRoots() {
   }
   print_stats();
 }
+
+
+
 
 void ConcurrentMark::checkpointRootsFinal(bool clear_all_soft_refs) {
   // world is stopped at this checkpoint

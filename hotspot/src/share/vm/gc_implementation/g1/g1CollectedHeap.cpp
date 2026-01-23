@@ -67,6 +67,7 @@
 #include "oops/oop.pcgc.inline.hpp"
 #include "runtime/orderAccess.inline.hpp"
 #include "runtime/vmThread.hpp"
+#include "utilities/ostream.hpp"
 
 size_t G1CollectedHeap::_humongous_object_threshold_in_words = 0;
 
@@ -2064,6 +2065,10 @@ jint G1CollectedHeap::initialize() {
     _humongous_reclaim_candidates.initialize(start, end, granularity);
   }
 
+
+  // 并发标记的数据结构和相关线程初始化，可以把这里理解为并发标记的入口。
+  // ConcurrentMark内部会进一步创建ConcurrentMarkThread
+  //
   // Create the ConcurrentMark data structure and thread.
   // (Must do this late, so that "max_regions" is defined.)
   _cm = new ConcurrentMark(this, prev_bitmap_storage, next_bitmap_storage);
@@ -2071,7 +2076,9 @@ jint G1CollectedHeap::initialize() {
     vm_shutdown_during_initialization("Could not create/initialize ConcurrentMark");
     return JNI_ENOMEM;
   }
+  // 这里的_cmThread即ConcurrentMarkThread
   _cmThread = _cm->cmThread();
+
 
   // Initialize the from_card cache structure of HeapRegionRemSet.
   HeapRegionRemSet::init_heap(max_regions());
