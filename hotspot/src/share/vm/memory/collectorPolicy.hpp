@@ -57,6 +57,9 @@ class G1CollectorPolicy;
 class GCPolicyCounters;
 class MarkSweepPolicy;
 
+
+
+
 class CollectorPolicy : public CHeapObj<mtGC> {
  protected:
   GCPolicyCounters* _gc_policy_counters;
@@ -96,11 +99,19 @@ class CollectorPolicy : public CHeapObj<mtGC> {
   CollectorPolicy();
 
  public:
+
+
+  // 交给子类实现，比如我们使用G1，G1的策略类会去实现
   virtual void initialize_all() {
+
+    // 跟CardTable逻辑有关, 回头再看...
     initialize_alignments();
+
+
     initialize_flags();
     initialize_size_info();
   }
+
 
   // Return maximum heap alignment that may be imposed by the policy
   static size_t compute_heap_alignment();
@@ -203,6 +214,9 @@ class CollectorPolicy : public CHeapObj<mtGC> {
   virtual void post_heap_initialize() = 0;
 };
 
+
+
+
 class ClearedAllSoftRefs : public StackObj {
   bool _clear_all_soft_refs;
   CollectorPolicy* _collector_policy;
@@ -218,6 +232,9 @@ class ClearedAllSoftRefs : public StackObj {
     }
   }
 };
+
+
+
 
 class GenCollectorPolicy : public CollectorPolicy {
 friend class TestGenCollectorPolicy;
@@ -299,6 +316,9 @@ friend class TestGenCollectorPolicy;
     assert(_max_gen0_size == MaxNewSize, "Should be taken care of by initialize_size_info");
   }
 };
+
+
+
 
 // All of hotspot's current collectors are subtypes of this
 // class. Currently, these collectors all use the same gen[0],

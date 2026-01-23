@@ -869,19 +869,39 @@ HeapRegionRemSet::HeapRegionRemSet(G1BlockOffsetSharedArray* bosa,
   reset_for_par_iteration();
 }
 
+
+
+
+// RSet数据结构初始化
 void HeapRegionRemSet::setup_remset_size() {
   // Setup sparse and fine-grain tables sizes.
   // table_size = base * (log(region_size / 1M) + 1)
   const int LOG_M = 20;
+
+
+  // LogOfHRGrainBytes是Region大小的对数，比如2M就21, 16M就是24. region_size_log_mb的意思是如果以MB为基准，对数此时是几。
   int region_size_log_mb = MAX2(HeapRegion::LogOfHRGrainBytes - LOG_M, 0);
+
+
+  // G1RSetSparseRegionEntries研发不太会主动设置的，太冷门了
+  // G1RSetSparseRegionEntriesBase定义在g1_global.hpp，默认值为4。
+  // 如果Region是16M的话，那么算出来的G1RSetSparseRegionEntries就是20。
+  // G1RSetSparseRegionEntries是卡表对应项挂的Table么...还得再看
   if (FLAG_IS_DEFAULT(G1RSetSparseRegionEntries)) {
     G1RSetSparseRegionEntries = G1RSetSparseRegionEntriesBase * (region_size_log_mb + 1);
   }
+
+
+  // G1RSetRegionEntriesBase定义在g1_global.hpp，默认值为256。
+  // 如果Region是16M的话，那么算出来的G1RSetRegionEntries就是1280。
   if (FLAG_IS_DEFAULT(G1RSetRegionEntries)) {
     G1RSetRegionEntries = G1RSetRegionEntriesBase * (region_size_log_mb + 1);
   }
   guarantee(G1RSetSparseRegionEntries > 0 && G1RSetRegionEntries > 0 , "Sanity");
 }
+
+
+
 
 bool HeapRegionRemSet::claim_iter() {
   if (_iter_state != Unclaimed) return false;

@@ -642,18 +642,18 @@ void* Universe::non_oop_word() {
 
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
+  tty->print_cr("[Fire-Constant] 1U=%d.", 1U);
   tty->print_cr("[Fire-Constant] _LP64=%d.", _LP64);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
 
-
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
   tty->print_cr("[Fire-Constant] UseG1GC=%d.", UseG1GC);
 
-  tty->print_cr("[Fire-Constant] InitialHeapSize=%d.", InitialHeapSize/1024/1024);
-  tty->print_cr("[Fire-Constant] MaxHeapSize=%d.", MaxHeapSize/1024/1024);
+  tty->print_cr("[Fire-Constant] InitialHeapSize=%d(MB).", InitialHeapSize/1024/1024);
+  tty->print_cr("[Fire-Constant] MaxHeapSize=%d(MB).", MaxHeapSize/1024/1024);
 
 
   // 确定没有引用的
@@ -831,11 +831,16 @@ jint Universe::initialize_heap() {
 
   } else if (UseG1GC) {
 #if INCLUDE_ALL_GCS
+
     // 日志确认INCLUDE_ALL_GCS=1，所以G1的策略类确认是G1CollectorPolicyExt
+    // G1CollectorPolicyExt继承G1CollectorPolicy，G1CollectorPolicy的构造函数里一大坨初始化逻辑
     G1CollectorPolicyExt* g1p = new G1CollectorPolicyExt();
+
+
     g1p->initialize_all();
     G1CollectedHeap* g1h = new G1CollectedHeap(g1p);
     Universe::_collectedHeap = g1h;
+
 #else  // INCLUDE_ALL_GCS
     fatal("UseG1GC not supported in java kernel vm.");
 #endif // INCLUDE_ALL_GCS

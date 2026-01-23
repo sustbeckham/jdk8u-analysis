@@ -36,6 +36,9 @@ uintx GenRemSet::max_alignment_constraint(Name nm) {
   return CardTableRS::ct_max_alignment_constraint();
 }
 
+
+
+
 class HasAccumulatedModifiedOopsClosure : public KlassClosure {
   bool _found;
  public:

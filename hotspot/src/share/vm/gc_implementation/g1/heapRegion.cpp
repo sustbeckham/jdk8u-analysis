@@ -108,8 +108,12 @@ size_t HeapRegion::max_region_size() {
 
 
 
+// 计算Region大小，如果不指定G1HeapRegionSize且xms和xmx相同的情况下，可以简单理解为是内存的1/2048，如4G内存Region就是2M.
 void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_heap_size) {
   uintx region_size = G1HeapRegionSize;
+
+
+  // 不指定Region大小才会初始化设置(比如cx服务默认设置了-XX:G1HeapRegionSize=16m)
   if (FLAG_IS_DEFAULT(G1HeapRegionSize)) {
     size_t average_heap_size = (initial_heap_size + max_heap_size) / 2;
 
@@ -120,6 +124,7 @@ void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_hea
     tty->print_cr("[Fire-G1-Region] region_size(step avg)=%d.", region_size/1024/1024);
   }
 
+
   // Region大小按照对数截取再放大，确保Region大小是2的N次方
   int region_size_log = log2_long((jlong) region_size);
   // Recalculate the region size to make sure it's a power of
@@ -128,6 +133,8 @@ void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_hea
   region_size = ((uintx)1 << region_size_log);
   tty->print_cr("[Fire-G1-Region] region_size(step log)=%d.", region_size/1024/1024);
 
+
+  // Region的大小范围在1-32M，这里确保不超限
   // Now make sure that we don't go over or under our limits.
   if (region_size < HeapRegionBounds::min_size()) {
     region_size = HeapRegionBounds::min_size();
@@ -135,6 +142,8 @@ void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_hea
     region_size = HeapRegionBounds::max_size();
   }
 
+
+  // 相关对数信息保留，后续内存操作需要
   // And recalculate the log.
   region_size_log = log2_long((jlong) region_size);
 
@@ -145,15 +154,21 @@ void HeapRegion::setup_heap_region_size(size_t initial_heap_size, size_t max_hea
   guarantee(LogOfHRGrainWords == 0, "we should only set it once");
   LogOfHRGrainWords = LogOfHRGrainBytes - LogHeapWordSize;
 
+
+  // 完成设置
   guarantee(GrainBytes == 0, "we should only set it once");
   // The cast to int is safe, given that we've bounded region_size by
   // MIN_REGION_SIZE and MAX_REGION_SIZE.
   GrainBytes = (size_t)region_size;
 
+
+  // LogHeapWordSize=3, byte到HeapWord的对数转换
   guarantee(GrainWords == 0, "we should only set it once");
   GrainWords = GrainBytes >> LogHeapWordSize;
   guarantee((size_t) 1 << LogOfHRGrainWords == GrainWords, "sanity");
 
+
+  // 卡表后面用到了再看...
   guarantee(CardsPerRegion == 0, "we should only set it once");
   CardsPerRegion = GrainBytes >> CardTableModRefBS::card_shift;
 }

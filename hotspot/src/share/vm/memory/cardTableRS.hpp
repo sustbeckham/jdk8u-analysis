@@ -149,9 +149,15 @@ public:
   }
   void invalidate_or_clear(Generation* old_gen);
 
+
+
+
   static uintx ct_max_alignment_constraint() {
     return CardTableModRefBS::ct_max_alignment_constraint();
   }
+
+
+
 
   jbyte* byte_for(void* p)     { return _ct_bs->byte_for(p); }
   jbyte* byte_after(void* p)   { return _ct_bs->byte_after(p); }

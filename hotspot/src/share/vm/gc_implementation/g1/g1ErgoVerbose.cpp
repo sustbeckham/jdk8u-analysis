@@ -29,14 +29,23 @@
 ErgoLevel G1ErgoVerbose::_level;
 bool G1ErgoVerbose::_enabled[ErgoHeuristicNum];
 
+
+
+
 void G1ErgoVerbose::initialize() {
   set_level(ErgoLow);
   set_enabled(false);
 }
 
+
+
+
 void G1ErgoVerbose::set_level(ErgoLevel level) {
   _level = level;
 }
+
+
+
 
 void G1ErgoVerbose::set_enabled(ErgoHeuristic n, bool enabled) {
   assert(0 <= n && n < ErgoHeuristicNum, "pre-condition");

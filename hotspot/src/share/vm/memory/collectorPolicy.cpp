@@ -78,6 +78,10 @@ void CollectorPolicy::assert_size_info() {
 }
 #endif // ASSERT
 
+
+
+
+// 堆内存相关Flag同步+内存对齐，非核心GC内容，一笔带过
 void CollectorPolicy::initialize_flags() {
   assert(_space_alignment != 0, "Space alignment not set up properly");
   assert(_heap_alignment != 0, "Heap alignment not set up properly");
@@ -139,6 +143,9 @@ void CollectorPolicy::initialize_flags() {
 
   DEBUG_ONLY(CollectorPolicy::assert_flags();)
 }
+
+
+
 
 void CollectorPolicy::initialize_size_info() {
   if (PrintGCDetails && Verbose) {

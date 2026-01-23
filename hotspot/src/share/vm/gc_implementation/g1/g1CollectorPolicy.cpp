@@ -205,10 +205,19 @@ G1CollectorPolicy::G1CollectorPolicy() :
   // the region size on the heap size, but the heap size should be
   // aligned with the region size. To get around this we use the
   // unaligned values for the heap.
+  // 计算Region大小，如果不指定G1HeapRegionSize且xms和xmx相同的情况下，可以简单理解为是内存的1/2048，如4G内存Region就是2M.
   HeapRegion::setup_heap_region_size(InitialHeapSize, MaxHeapSize);
+
+
+  // RSet数据结构初始化
   HeapRegionRemSet::setup_remset_size();
 
+
+  // 得再看...
   G1ErgoVerbose::initialize();
+
+
+  // 是否打印G1的自适应相关策略日志(目前cx开了确实能看到一些额外的日志)
   if (PrintAdaptiveSizePolicy) {
     // Currently, we only use a single switch for all the heuristics.
     G1ErgoVerbose::set_enabled(true);
@@ -220,8 +229,13 @@ G1CollectorPolicy::G1CollectorPolicy() :
     G1ErgoVerbose::set_enabled(false);
   }
 
+
   // Verify PLAB sizes
+  // 注意，这里的region_size确实是Region的单个大小，但是是已经换算成HeapWord的情况下
   const size_t region_size = HeapRegion::GrainWords;
+
+
+  // 得再看...(不过非核心流程, 是个边角条件校验)
   if (YoungPLABSize > region_size || OldPLABSize > region_size) {
     char buffer[128];
     jio_snprintf(buffer, sizeof(buffer), "%sPLABSize should be at most " SIZE_FORMAT,
@@ -229,13 +243,21 @@ G1CollectorPolicy::G1CollectorPolicy() :
     vm_exit_during_initialization(buffer);
   }
 
+
+  // GC预测相关, 回头再看
   _recent_prev_end_times_for_all_gcs_sec->add(os::elapsedTime());
   _prev_collection_pause_end_ms = os::elapsedTime() * 1000.0;
 
+
+  // _parallel_gc_threads在8核下是8个线程，超过8核有个算法但是此时总线程略低于核数(比如10核是9个线程)。
   _phase_times = new G1GCPhaseTimes(_parallel_gc_threads);
 
+
+  // 8核以上认为这个index就是7
   int index = MIN2(_parallel_gc_threads - 1, 7);
 
+
+  // GC预测相关, 回头再看
   _rs_length_diff_seq->add(rs_length_diff_defaults[index]);
   _cost_per_card_ms_seq->add(cost_per_card_ms_defaults[index]);
   _young_cards_per_entry_ratio_seq->add(
@@ -260,6 +282,7 @@ G1CollectorPolicy::G1CollectorPolicy() :
 
   // First make sure that, if either parameter is set, its value is
   // reasonable.
+  // 先check下停顿时间是否被手工设置了，校验参数合法性
   if (!FLAG_IS_DEFAULT(MaxGCPauseMillis)) {
     if (MaxGCPauseMillis < 1) {
       vm_exit_during_initialization("MaxGCPauseMillis should be "
@@ -299,6 +322,7 @@ G1CollectorPolicy::G1CollectorPolicy() :
   }
 
 
+  // 上述2个参数的合法性校验
   // Finally, make sure that the two parameters are consistent.
   if (MaxGCPauseMillis >= GCPauseIntervalMillis) {
     char buffer[256];
@@ -310,7 +334,7 @@ G1CollectorPolicy::G1CollectorPolicy() :
   }
 
 
-  // G1MMUTrackerQueue用来做GC预测...
+  // G1MMUTrackerQueue用来做GC预测, 回头再说...
   double max_gc_time = (double) MaxGCPauseMillis / 1000.0;
   double time_slice  = (double) GCPauseIntervalMillis / 1000.0;
   _mmu_tracker = new G1MMUTrackerQueue(time_slice, max_gc_time);
@@ -327,19 +351,31 @@ G1CollectorPolicy::G1CollectorPolicy() :
   _sigma = (double) confidence_perc / 100.0;
 
 
+  // GC预测, 回头再说...
   // start conservatively (around 50ms is about right)
   _concurrent_mark_remark_times_ms->add(0.05);
   _concurrent_mark_cleanup_times_ms->add(0.20);
+
+
+  // 新生代晋升到老年代的阈值，默认15
   _tenuring_threshold = MaxTenuringThreshold;
+
+
+  // survivor最多可以有多少个Region，这个后续在GC期间会动态计算
   // _max_survivor_regions will be calculated by
   // update_young_list_target_length() during initialization.
   _max_survivor_regions = 0;
 
+
+  // GC预测, 回头再说...
   assert(GCTimeRatio > 0,
          "we should have set it to a default value set_g1_gc_flags() "
          "if a user set it to 0");
   _gc_overhead_perc = 100.0 * (1.0 / (1.0 + GCTimeRatio));
 
+
+  // G1ReservePercent: 决定了我们在堆中应该保留的最小内存量，以最大限度地降低晋升失败的概率。
+  // 默认值10%
   uintx reserve_perc = G1ReservePercent;
   // Put an artificial ceiling on this so that it's not set to a silly value.
   if (reserve_perc > 50) {
@@ -348,34 +384,66 @@ G1CollectorPolicy::G1CollectorPolicy() :
             "it's been updated to %u", reserve_perc);
   }
   _reserve_factor = (double) reserve_perc / 100.0;
+
+
+  // 同上，和G1ReservePercent对应的，需要保留的region个数
   // This will be set when the heap is expanded
   // for the first time during initialization.
   _reserve_regions = 0;
 
+
+  // CollectionSetChooser看起来可以理解为: 查看老年代的CSet进一步决策哪些老年代的Region需要被回收
+  // 内部有决策参数(当前这边应用下Region默认情况是16M，这意味着单个Region存活对象高于13.6MB的将不会被选入CSet(回收价值不大))
   _collectionSetChooser = new CollectionSetChooser();
 }
 
 
 
 
+// 跟CardTable逻辑有关, 回头再看...
 void G1CollectorPolicy::initialize_alignments() {
+  // (该字段定义在collectorPolicy.hpp)对齐大小，其实就是Region大小。如果不指定默认是堆/2048。
   _space_alignment = HeapRegion::GrainBytes;
+
+
   size_t card_table_alignment = GenRemSet::max_alignment_constraint(GenRemSet::CardTable);
+
+
+  // 一般不会采用大页, 所以这里认为是4K就好
   size_t page_size = UseLargePages ? os::large_page_size() : os::vm_page_size();
+
+
   _heap_alignment = MAX3(card_table_alignment, _space_alignment, page_size);
 }
 
+
+
+
 void G1CollectorPolicy::initialize_flags() {
+
+  // 自适应调整，如果没手工设置G1HeapRegionSize，此时把计算出的堆/2048的Region大小结果同步过去
   if (G1HeapRegionSize != HeapRegion::GrainBytes) {
     FLAG_SET_ERGO(uintx, G1HeapRegionSize, HeapRegion::GrainBytes);
   }
 
+
+  // SurvivorRatio默认的比例是8，即eden区域是survivor区域的8倍。这里如果手工设置做合法性判断
   if (SurvivorRatio < 1) {
     vm_exit_during_initialization("Invalid survivor ratio specified");
   }
+
+
+  // 回到collectorPolicy.hpp走flag的通用初始化
+  // 堆内存相关Flag同步+内存对齐，非核心GC内容，一笔带过
   CollectorPolicy::initialize_flags();
+
+
+
   _young_gen_sizer = new G1YoungGenSizer(); // Must be after call to initialize_flags
 }
+
+
+
 
 void G1CollectorPolicy::post_heap_initialize() {
   uintx max_regions = G1CollectedHeap::heap()->max_regions();
@@ -384,6 +452,9 @@ void G1CollectorPolicy::post_heap_initialize() {
     FLAG_SET_ERGO(uintx, MaxNewSize, max_young_size);
   }
 }
+
+
+
 
 G1YoungGenSizer::G1YoungGenSizer() : _sizer_kind(SizerDefaults), _adaptive_size(true),
         _min_desired_young_length(0), _max_desired_young_length(0) {
@@ -426,15 +497,24 @@ G1YoungGenSizer::G1YoungGenSizer() : _sizer_kind(SizerDefaults), _adaptive_size(
   }
 }
 
+
+
+
 uint G1YoungGenSizer::calculate_default_min_length(uint new_number_of_heap_regions) {
   uint default_value = (new_number_of_heap_regions * G1NewSizePercent) / 100;
   return MAX2(1U, default_value);
 }
 
+
+
+
 uint G1YoungGenSizer::calculate_default_max_length(uint new_number_of_heap_regions) {
   uint default_value = (new_number_of_heap_regions * G1MaxNewSizePercent) / 100;
   return MAX2(1U, default_value);
 }
+
+
+
 
 void G1YoungGenSizer::recalculate_min_max_young_length(uint number_of_heap_regions, uint* min_young_length, uint* max_young_length) {
   assert(number_of_heap_regions > 0, "Heap must be initialized");
@@ -466,6 +546,9 @@ void G1YoungGenSizer::recalculate_min_max_young_length(uint number_of_heap_regio
   assert(*min_young_length <= *max_young_length, "Invalid min/max young gen size values");
 }
 
+
+
+
 uint G1YoungGenSizer::max_young_length(uint number_of_heap_regions) {
   // We need to pass the desired values because recalculation may not update these
   // values in some cases.
@@ -475,10 +558,16 @@ uint G1YoungGenSizer::max_young_length(uint number_of_heap_regions) {
   return result;
 }
 
+
+
+
 void G1YoungGenSizer::heap_size_changed(uint new_number_of_heap_regions) {
   recalculate_min_max_young_length(new_number_of_heap_regions, &_min_desired_young_length,
           &_max_desired_young_length);
 }
+
+
+
 
 void G1CollectorPolicy::init() {
   // Set aside an initial future to_space.
@@ -500,6 +589,9 @@ void G1CollectorPolicy::init() {
   // collection set list. Initialize the per-collection set info
   start_incremental_cset_building();
 }
+
+
+
 
 // Create the jstat counters for the policy.
 void G1CollectorPolicy::initialize_gc_policy_counters() {

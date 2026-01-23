@@ -647,9 +647,15 @@ MemRegion CardTableModRefBS::dirty_card_range_after_reset(MemRegion mr,
   return MemRegion(mr.end(), mr.end());
 }
 
+
+
+
 uintx CardTableModRefBS::ct_max_alignment_constraint() {
   return card_size * os::vm_page_size();
 }
+
+
+
 
 void CardTableModRefBS::verify_guard() {
   // For product build verification

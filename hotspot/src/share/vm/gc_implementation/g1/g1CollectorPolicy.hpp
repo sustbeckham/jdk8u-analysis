@@ -85,6 +85,9 @@ class TraceGen1TimeData : public CHeapObj<mtGC> {
   void print() const;
 };
 
+
+
+
 // There are three command line options related to the young gen size:
 // NewSize, MaxNewSize and NewRatio (There is also -Xmn, but that is
 // just a short form for NewSize==MaxNewSize). G1 will use its internal
@@ -93,36 +96,57 @@ class TraceGen1TimeData : public CHeapObj<mtGC> {
 // size. Also, these are general options taking byte sizes. G1 will
 // internally work with a number of regions instead. So, some rounding
 // will occur.
+// 存在三个与年轻代大小相关的命令行选项：
+// NewSize、MaxNewSize 和 NewRatio（此外还有 -Xmn，它只是 NewSize == MaxNewSize 的简写形式）。
+// G1垃圾收集器将使用其内部的启发式方法来计算实际的年轻代大小，因此这些选项基本上只是限定了 G1 可以选择年轻代大小的范围。
+// 同时，这些是接受字节大小的通用选项。G1 内部会以区域（regions）为单位工作，因此会发生一些舍入（rounding）。
 //
 // If nothing related to the the young gen size is set on the command
 // line we should allow the young gen to be between G1NewSizePercent
 // and G1MaxNewSizePercent of the heap size. This means that every time
 // the heap size changes, the limits for the young gen size will be
 // recalculated.
+// 如果在命令行上未设置任何与年轻代大小相关的选项，则年轻代大小应允许在堆大小的
+// G1NewSizePercent到G1MaxNewSizePercent之间。这意味着每当堆大小发生变化时，
+// 年轻代大小的限制范围将被重新计算。
 //
 // If only -XX:NewSize is set we should use the specified value as the
 // minimum size for young gen. Still using G1MaxNewSizePercent of the
 // heap as maximum.
+// 如果仅设置了-XX:NewSize，则应使用指定的值作为年轻代的最小大小。最大大小仍使用堆大小的G1MaxNewSizePercent。
 //
 // If only -XX:MaxNewSize is set we should use the specified value as the
 // maximum size for young gen. Still using G1NewSizePercent of the heap
 // as minimum.
+// 如果仅设置了-XX:MaxNewSize，则应使用指定的值作为年轻代的最大大小。最小大小仍使用堆大小的G1NewSizePercent。
 //
 // If -XX:NewSize and -XX:MaxNewSize are both specified we use these values.
 // No updates when the heap size changes. There is a special case when
 // NewSize==MaxNewSize. This is interpreted as "fixed" and will use a
 // different heuristic for calculating the collection set when we do mixed
 // collection.
+// 如果同时设置了-XX:NewSize和-XX:MaxNewSize，则使用这些指定的值。堆大小变化时不再更新这些值。
+// 当NewSize等于MaxNewSize时存在一个特殊情况。这会被解释为“固定”（"fixed"），并且在执行混合
+// 收集（mixed collection）时，将使用不同的启发式策略来计算收集集（collection set）。
 //
 // If only -XX:NewRatio is set we should use the specified ratio of the heap
 // as both min and max. This will be interpreted as "fixed" just like the
 // NewSize==MaxNewSize case above. But we will update the min and max
 // everytime the heap size changes.
+// 如果仅设置了-XX:NewRatio，则应使用指定的堆比例同时作为年轻代的最小和最大大小。
+// 这将像上面NewSize==MaxNewSize 的情况一样被解释为“固定”（"fixed"）。
+// 但我们会在每次堆大小变化时 更新这个最小值和最大值。
 //
 // NewSize and MaxNewSize override NewRatio. So, NewRatio is ignored if it is
 // combined with either NewSize or MaxNewSize. (A warning message is printed.)
+// NewSize和MaxNewSize会覆盖（override）NewRatio。因此，如果NewRatio与NewSize或MaxNewSize中的任何一个同时设置，
+// NewRatio 将被忽略。（会打印一条警告消息。）
+//
+// ....这个计算还真特么繁琐。
 class G1YoungGenSizer : public CHeapObj<mtGC> {
 private:
+
+  // 枚举对应上面的五种情况
   enum SizerKind {
     SizerDefaults,
     SizerNewSizeOnly,
@@ -131,16 +155,25 @@ private:
     SizerNewRatio
   };
   SizerKind _sizer_kind;
+
+
+  // 年轻代的最小/最大期望长度(这里的长度即Region的个数)
   uint _min_desired_young_length;
   uint _max_desired_young_length;
 
+
+  // 当使用命令行选项设置[固定]新生代大小时为假，否则为真。
   // False when using a fixed young generation size due to command-line options,
   // true otherwise.
   bool _adaptive_size;
 
+
+  // 计算新生代默认最小/最大需要多少个Region
   uint calculate_default_min_length(uint new_number_of_heap_regions);
   uint calculate_default_max_length(uint new_number_of_heap_regions);
 
+
+  // 重新计算新生代最小/最大需要多少个Region
   // Update the given values for minimum and maximum young gen length in regions
   // given the number of heap regions depending on the kind of sizing algorithm.
   void recalculate_min_max_young_length(uint number_of_heap_regions, uint* min_young_length, uint* max_young_length);
@@ -152,6 +185,7 @@ public:
   uint max_young_length(uint number_of_heap_regions);
 
   void heap_size_changed(uint new_number_of_heap_regions);
+
   uint min_desired_young_length() {
     return _min_desired_young_length;
   }

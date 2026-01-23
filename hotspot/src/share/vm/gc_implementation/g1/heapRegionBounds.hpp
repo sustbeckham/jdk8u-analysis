@@ -34,6 +34,7 @@ private:
   // heaps a bit more efficiently.
   static const size_t MIN_REGION_SIZE = 1024 * 1024;
 
+  // Region限制的的最大大小
   // Maximum region size; we don't go higher than that. There's a good
   // reason for having an upper bound. We don't want regions to get too
   // large, otherwise cleanup's effectiveness would decrease as there
