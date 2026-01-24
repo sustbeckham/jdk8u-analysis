@@ -647,6 +647,7 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
+  tty->print_cr("[Fire-Constant] CHECK_UNHANDLED_OOPS=%d.", CHECK_UNHANDLED_OOPS);
 
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);

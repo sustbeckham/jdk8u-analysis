@@ -154,6 +154,9 @@ inline void G1InvokeIfNotTriggeredClosure::do_oop_nv(T* p) {
   }
 }
 
+
+
+
 template <class T>
 inline void G1UpdateRSOrPushRefOopClosure::do_oop_nv(T* p) {
   oop obj = oopDesc::load_decode_heap_oop(p);

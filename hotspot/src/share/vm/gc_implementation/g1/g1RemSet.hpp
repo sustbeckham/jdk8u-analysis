@@ -35,6 +35,9 @@ class CardTableModRefBarrierSet;
 class ConcurrentG1Refine;
 class G1ParPushHeapRSClosure;
 
+
+
+
 // A G1RemSet in which each heap region has a rem set that records the
 // external heap references into it.  Uses a mod ref bs to track updates,
 // so that they can be used to update the individual region remsets.
@@ -147,13 +150,19 @@ public:
   // Print accumulated summary info from the last time called.
   virtual void print_periodic_summary_info(const char* header);
 
+
+  // 校验相关, 且G1HRRSFlushLogBuffersOnVerify默认为false, 下方逻辑可以不用关注
   // Prepare remembered set for verification.
   virtual void prepare_for_verify();
+
 
   size_t conc_refine_cards() const {
     return _conc_refine_cards;
   }
 };
+
+
+
 
 class CountNonCleanMemRegionClosure: public MemRegionClosure {
   G1CollectedHeap* _g1;
@@ -167,6 +176,9 @@ public:
   int n() { return _n; };
   HeapWord* start_first() { return _start_first; }
 };
+
+
+
 
 class UpdateRSOopClosure: public ExtendedOopClosure {
   HeapRegion* _from;

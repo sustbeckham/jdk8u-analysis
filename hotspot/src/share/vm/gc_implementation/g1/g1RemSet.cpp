@@ -649,6 +649,10 @@ void G1RemSet::print_summary_info(G1RemSetSummary * summary, const char * header
   summary->print_on(gclog_or_tty);
 }
 
+
+
+
+// 校验相关, 且G1HRRSFlushLogBuffersOnVerify默认为false, 下方逻辑可以不用关注
 void G1RemSet::prepare_for_verify() {
   if (G1HRRSFlushLogBuffersOnVerify &&
       (VerifyBeforeGC || VerifyAfterGC)

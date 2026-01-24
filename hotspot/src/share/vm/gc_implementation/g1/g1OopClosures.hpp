@@ -236,6 +236,9 @@ public:
   virtual void do_oop(narrowOop* p)  { do_oop_nv(p); }
 };
 
+
+
+
 class G1UpdateRSOrPushRefOopClosure: public ExtendedOopClosure {
   G1CollectedHeap* _g1;
   G1RemSet* _g1_rem_set;

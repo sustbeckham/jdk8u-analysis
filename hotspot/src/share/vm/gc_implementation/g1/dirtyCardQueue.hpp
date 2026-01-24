@@ -30,6 +30,9 @@
 
 class FreeIdSet;
 
+
+
+
 // A closure class for processing card table entries.  Note that we don't
 // require these closure objects to be stack-allocated.
 class CardTableEntryClosure: public CHeapObj<mtGC> {
@@ -38,6 +41,9 @@ public:
   // "false", terminate the iteration early.
   virtual bool do_card_ptr(jbyte* card_ptr, uint worker_i = 0) = 0;
 };
+
+
+
 
 // A ptrQueue whose elements are "oops", pointers to object heads.
 class DirtyCardQueue: public PtrQueue {
@@ -76,6 +82,7 @@ public:
   size_t get_index() { return _index;}
   void reinitialize() { _buf = 0; _sz = 0; _index = 0;}
 };
+
 
 
 
