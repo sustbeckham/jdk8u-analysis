@@ -67,7 +67,6 @@
 #include "oops/oop.pcgc.inline.hpp"
 #include "runtime/orderAccess.inline.hpp"
 #include "runtime/vmThread.hpp"
-#include "utilities/ostream.hpp"
 
 size_t G1CollectedHeap::_humongous_object_threshold_in_words = 0;
 
@@ -111,8 +110,6 @@ public:
 
   void set_concurrent(bool b) { _concurrent = b; }
 };
-
-
 
 
 class ClearLoggedCardTableEntryClosure: public CardTableEntryClosure {
@@ -1840,11 +1837,7 @@ void G1CollectedHeap::shrink(size_t shrink_bytes) {
 #endif // _MSC_VER
 
 
-
-
-// universe.cpp虚拟机初始化时触发G1堆的初始化
 G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
-  // 这里核心的事情就是初始化了后续GC要并发执行时对应的线程组
   SharedHeap(policy_),
   _g1_policy(policy_),
   _dirty_card_queue_set(false),
@@ -1860,7 +1853,6 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
   _g1mm(NULL),
   _refine_cte_cl(NULL),
   _full_collection(false),
-  // 这三个Checker仅仅用来断言, 源码阅读优先级放低
   _secondary_free_list("Secondary Free List", new SecondaryFreeRegionListMtSafeChecker()),
   _old_set("Old Set", false /* humongous */, new OldRegionSetMtSafeChecker()),
   _humongous_set("Master Humongous Set", true /* humongous */, new HumongousRegionSetMtSafeChecker()),
@@ -1882,14 +1874,83 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
   _worker_cset_start_region(NULL),
   _worker_cset_start_region_time_stamp(NULL),
   _gc_timer_stw(new (ResourceObj::C_HEAP, mtGC) STWGCTimer()),
-  _gc_timer_cm(new (ResourceObj::C_HEAP, mtGC) ConcurrentGCTimer()。
+  _gc_timer_cm(new (ResourceObj::C_HEAP, mtGC) ConcurrentGCTimer()),
+  _gc_tracer_stw(new (ResourceObj::C_HEAP, mtGC) G1NewTracer()),
+  _gc_tracer_cm(new (ResourceObj::C_HEAP, mtGC) G1OldTracer()) {
+
+  _g1h = this;
+
+  _allocator = G1Allocator::create_allocator(_g1h);
+  _humongous_object_threshold_in_words = HeapRegion::GrainWords / 2;
+
+  int n_queues = MAX2((int)ParallelGCThreads, 1);
+  _task_queues = new RefToScanQueueSet(n_queues);
+
+  uint n_rem_sets = HeapRegionRemSet::num_par_rem_sets();
+  assert(n_rem_sets > 0, "Invariant.");
+
+  _worker_cset_start_region = NEW_C_HEAP_ARRAY(HeapRegion*, n_queues, mtGC);
+  _worker_cset_start_region_time_stamp = NEW_C_HEAP_ARRAY(uint, n_queues, mtGC);
+  _evacuation_failed_info_array = NEW_C_HEAP_ARRAY(EvacuationFailedInfo, n_queues, mtGC);
+
+  for (int i = 0; i < n_queues; i++) {
+    RefToScanQueue* q = new RefToScanQueue();
+    q->initialize();
+    _task_queues->register_queue(i, q);
+    ::new (&_evacuation_failed_info_array[i]) EvacuationFailedInfo();
+  }
+  clear_cset_start_regions();
+
+  // Initialize the G1EvacuationFailureALot counters and flags.
+  NOT_PRODUCT(reset_evacuation_should_fail();)
+
+  guarantee(_task_queues != NULL, "task_queues allocation failure.");
+}
+
+G1RegionToSpaceMapper* G1CollectedHeap::create_aux_memory_mapper(const char* description,
+                                                                 size_t size,
+                                                                 size_t translation_factor) {
+  size_t preferred_page_size = os::page_size_for_region_unaligned(size, 1);
+  // Allocate a new reserved space, preferring to use large pages.
+  ReservedSpace rs(size, preferred_page_size);
+  G1RegionToSpaceMapper* result  =
+    G1RegionToSpaceMapper::create_mapper(rs,
+                                         size,
+                                         rs.alignment(),
+                                         HeapRegion::GrainBytes,
+                                         translation_factor,
+                                         mtGC);
+  if (TracePageSizes) {
+    gclog_or_tty->print_cr("G1 '%s': pg_sz=" SIZE_FORMAT " base=" PTR_FORMAT " size=" SIZE_FORMAT " alignment=" SIZE_FORMAT " reqsize=" SIZE_FORMAT,
+                           description, preferred_page_size, p2i(rs.base()), rs.size(), rs.alignment(), size);
+  }
+  return result;
+}
+
+jint G1CollectedHeap::initialize() {
+  CollectedHeap::pre_initialize();
+  os::enable_vtime();
+
+  G1Log::init();
+
+  // Necessary to satisfy locking discipline assertions.
+
+  MutexLocker x(Heap_lock);
+
+  // We have to initialize the printer before committing the heap, as
+  // it will be used then.
+  _hr_printer.set_active(G1PrintHeapRegions);
+
+  // While there are no constraints in the GC code that HeapWordSize
+  // be any particular value, there are multiple other areas in the
+  // system which believe this to be true (e.g. oop->object_size in some
+  // cases incorrectly returns the size in wordSize units rather than
+  // HeapWordSize).
+  guarantee(HeapWordSize == wordSize, "HeapWordSize must equal wordSize");
+
   size_t init_byte_size = collector_policy()->initial_heap_byte_size();
   size_t max_byte_size = collector_policy()->max_heap_byte_size();
-
-
-  // ?
   size_t heap_alignment = collector_policy()->heap_alignment();
-
 
   // Ensure that the sizes are properly aligned.
   Universe::check_alignment(init_byte_size, HeapRegion::GrainBytes, "g1 heap");
@@ -1999,10 +2060,6 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
     _humongous_reclaim_candidates.initialize(start, end, granularity);
   }
 
-
-  // 并发标记的数据结构和相关线程初始化，可以把这里理解为并发标记的入口。
-  // ConcurrentMark内部会进一步创建ConcurrentMarkThread
-  //
   // Create the ConcurrentMark data structure and thread.
   // (Must do this late, so that "max_regions" is defined.)
   _cm = new ConcurrentMark(this, prev_bitmap_storage, next_bitmap_storage);
@@ -2010,9 +2067,7 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
     vm_shutdown_during_initialization("Could not create/initialize ConcurrentMark");
     return JNI_ENOMEM;
   }
-  // 这里的_cmThread即ConcurrentMarkThread
   _cmThread = _cm->cmThread();
-
 
   // Initialize the from_card cache structure of HeapRegionRemSet.
   HeapRegionRemSet::init_heap(max_regions());
@@ -2083,9 +2138,6 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
 
   return JNI_OK;
 }
-
-
-
 
 void G1CollectedHeap::stop() {
   // Stop all concurrent threads. We do this to make sure these threads
@@ -6738,15 +6790,10 @@ HeapRegion* G1CollectedHeap::new_gc_alloc_region(size_t word_size,
   return NULL;
 }
 
-
-
-
 void G1CollectedHeap::retire_gc_alloc_region(HeapRegion* alloc_region,
                                              size_t allocated_bytes,
                                              InCSetState dest) {
-  // 是否处于[初始标记]阶段
   bool during_im = g1_policy()->during_initial_mark_pause();
-
   alloc_region->note_end_of_copying(during_im);
   g1_policy()->record_bytes_copied_during_gc(allocated_bytes);
   if (dest.is_young()) {
@@ -6756,9 +6803,6 @@ void G1CollectedHeap::retire_gc_alloc_region(HeapRegion* alloc_region,
   }
   _hr_printer.retire(alloc_region);
 }
-
-
-
 
 // Heap region set verification
 
