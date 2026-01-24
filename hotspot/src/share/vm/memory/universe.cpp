@@ -821,7 +821,6 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
 
 jint Universe::initialize_heap() {
 
-  // 问题分析多用G1，这个if分支不看
   if (UseParallelGC) {
 #if INCLUDE_ALL_GCS
     Universe::_collectedHeap = new ParallelScavengeHeap();
@@ -837,7 +836,10 @@ jint Universe::initialize_heap() {
     G1CollectorPolicyExt* g1p = new G1CollectorPolicyExt();
 
 
+    // 以G1为例，Region大小，新生代内存上下界，CardTable参数(这里晚点看...)等事项
     g1p->initialize_all();
+
+
     G1CollectedHeap* g1h = new G1CollectedHeap(g1p);
     Universe::_collectedHeap = g1h;
 
@@ -868,7 +870,10 @@ jint Universe::initialize_heap() {
     Universe::_collectedHeap = new GenCollectedHeap(gc_policy);
   }
 
+
+  // ?
   ThreadLocalAllocBuffer::set_max_size(Universe::heap()->max_tlab_size());
+
 
   jint status = Universe::heap()->initialize();
   if (status != JNI_OK) {

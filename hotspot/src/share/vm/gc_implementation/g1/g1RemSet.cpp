@@ -435,6 +435,10 @@ G1UpdateRSOrPushRefOopClosure(G1CollectedHeap* g1h,
   _record_refs_into_cset(record_refs_into_cset),
   _push_ref_cl(push_ref_cl), _worker_i(worker_i) { }
 
+
+
+
+
 // Returns true if the given card contains references that point
 // into the collection set, if we're checking for such references;
 // false otherwise.
@@ -608,6 +612,9 @@ bool G1RemSet::refine_card(jbyte* card_ptr, uint worker_i,
 
   return has_refs_into_cset;
 }
+
+
+
 
 void G1RemSet::print_periodic_summary_info(const char* header) {
   G1RemSetSummary current;

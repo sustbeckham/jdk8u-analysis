@@ -63,6 +63,8 @@ class EventLog : public CHeapObj<mtInternal> {
 };
 
 
+
+
 // A templated subclass of EventLog that provides basic ring buffer
 // functionality.  Most event loggers should subclass this, possibly
 // providing a more featureful log function if the existing copy
@@ -133,6 +135,9 @@ template <class T> class EventLogBase : public EventLog {
     print(out, e.data);
   }
 };
+
+
+
 
 // A simple wrapper class for fixed size text messages.
 class StringLogMessage : public FormatBuffer<256> {

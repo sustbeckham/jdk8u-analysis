@@ -151,8 +151,12 @@ void CollectedHeap::trace_heap_after_gc(GCTracer* gc_tracer) {
 // Memory state functions.
 
 
+
+
+// G1堆模型初始化传递初始化(G1CollectedHeap -> SharedHeap -> CollectedHeap)
 CollectedHeap::CollectedHeap() : _n_par_threads(0)
 {
+  // 回头跑脚本验证每个值的大小..
   const size_t max_len = size_t(arrayOopDesc::max_array_length(T_INT));
   const size_t elements_per_word = HeapWordSize / sizeof(jint);
   _filler_array_max_size = align_object_size(filler_array_hdr_size() +
@@ -162,9 +166,14 @@ CollectedHeap::CollectedHeap() : _n_par_threads(0)
   _is_gc_active = false;
   _total_collections = _total_full_collections = 0;
   _gc_cause = _gc_lastcause = GCCause::_no_gc;
+
+
+  // 非核心功能可忽略
   NOT_PRODUCT(_promotion_failure_alot_count = 0;)
   NOT_PRODUCT(_promotion_failure_alot_gc_number = 0;)
 
+
+  // 非核心功能可忽略
   if (UsePerfData) {
     EXCEPTION_MARK;
 
@@ -176,7 +185,13 @@ CollectedHeap::CollectedHeap() : _n_par_threads(0)
                 PerfDataManager::create_string_variable(SUN_GC, "lastCause",
                              80, GCCause::to_string(_gc_lastcause), CHECK);
   }
+
+
+  // 这个在后续的pre_initialize()有初始化, 没懂...
   _defer_initial_card_mark = false; // strengthened by subclass in pre_initialize() below.
+
+
+  // LogEvents定义在globals.hpp, 默认开启(诊断型参数)。
   // Create the ring log
   if (LogEvents) {
     _gc_heap_log = new GCHeapLog();
@@ -184,6 +199,9 @@ CollectedHeap::CollectedHeap() : _n_par_threads(0)
     _gc_heap_log = NULL;
   }
 }
+
+
+
 
 // This interface assumes that it's being called by the
 // vm thread. It collects the heap assuming that the

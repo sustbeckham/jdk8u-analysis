@@ -59,6 +59,9 @@ class GCMessage : public FormatBuffer<1024> {
   GCMessage() {}
 };
 
+
+
+
 class GCHeapLog : public EventLogBase<GCMessage> {
  private:
   void log_heap(bool before);
@@ -73,6 +76,9 @@ class GCHeapLog : public EventLogBase<GCMessage> {
     log_heap(false);
   }
 };
+
+
+
 
 //
 // CollectedHeap

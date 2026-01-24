@@ -108,7 +108,10 @@ class CollectorPolicy : public CHeapObj<mtGC> {
     initialize_alignments();
 
 
+    // 以G1为例, 核心动作是G1HeapRegionSize初始化(之前算的Region大小)，以及新生代的内存上下界初始化
     initialize_flags();
+
+    // G1没找到实现?... 可以暂时认为什么也不做
     initialize_size_info();
   }
 

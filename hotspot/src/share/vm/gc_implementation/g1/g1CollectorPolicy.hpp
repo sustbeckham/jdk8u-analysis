@@ -139,8 +139,8 @@ class TraceGen1TimeData : public CHeapObj<mtGC> {
 //
 // NewSize and MaxNewSize override NewRatio. So, NewRatio is ignored if it is
 // combined with either NewSize or MaxNewSize. (A warning message is printed.)
-// NewSize和MaxNewSize会覆盖（override）NewRatio。因此，如果NewRatio与NewSize或MaxNewSize中的任何一个同时设置，
-// NewRatio 将被忽略。（会打印一条警告消息。）
+// NewSize和MaxNewSize会覆盖(override)NewRatio。因此，如果NewRatio与NewSize或MaxNewSize中的任何一个同时设置，
+// NewRatio将被忽略。（会打印一条警告消息。warning("-XX:NewSize and -XX:MaxNewSize override -XX:NewRatio");）
 //
 // ....这个计算还真特么繁琐。
 class G1YoungGenSizer : public CHeapObj<mtGC> {

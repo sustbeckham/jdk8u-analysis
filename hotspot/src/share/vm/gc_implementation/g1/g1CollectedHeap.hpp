@@ -223,7 +223,11 @@ private:
   // The one and only G1CollectedHeap, so static functions can find it.
   static G1CollectedHeap* _g1h;
 
+
+  // 这里是个高频的知识点，巨大对象的决策阈值默认是Region的一半，超过就认为是巨大对象。
+  // G1CollectedHeap构造函数初始化时赋值。
   static size_t _humongous_object_threshold_in_words;
+
 
   // The secondary free list which contains regions that have been
   // freed up during the cleanup process. This will be appended to

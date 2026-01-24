@@ -39,6 +39,11 @@ PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
 SharedHeap* SharedHeap::_sh;
 
+
+
+
+// G1堆模型初始化传递初始化(G1CollectedHeap -> SharedHeap -> CollectedHeap)
+// 这里核心的事情就是初始化了后续GC要并发执行时对应的线程组
 SharedHeap::SharedHeap(CollectorPolicy* policy_) :
   CollectedHeap(),
   _collector_policy(policy_),
@@ -47,11 +52,15 @@ SharedHeap::SharedHeap(CollectorPolicy* policy_) :
   _workers(NULL)
 {
   _sh = this;  // ch is static, should be set only once.
+
+  // 在G1场景下这个if分支满足
   if ((UseParNewGC ||
       (UseConcMarkSweepGC && (CMSParallelInitialMarkEnabled ||
                               CMSParallelRemarkEnabled)) ||
        UseG1GC) &&
       ParallelGCThreads > 0) {
+
+    // 这个线程组后续多个地方会用(比如并发标记时), ParallelGCThreads解释过很多次了8核情况下是8
     _workers = new FlexibleWorkGang("Parallel GC Threads", ParallelGCThreads,
                             /* are_GC_task_threads */true,
                             /* are_ConcurrentGC_threads */false);
@@ -62,6 +71,9 @@ SharedHeap::SharedHeap(CollectorPolicy* policy_) :
     }
   }
 }
+
+
+
 
 bool SharedHeap::heap_lock_held_for_gc() {
   Thread* t = Thread::current();

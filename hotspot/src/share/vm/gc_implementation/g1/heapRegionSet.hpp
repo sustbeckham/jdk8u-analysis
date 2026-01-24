@@ -198,6 +198,9 @@ public:
 
 class FreeRegionListIterator;
 
+
+
+
 class FreeRegionList : public HeapRegionSetBase {
   friend class FreeRegionListIterator;
 
@@ -260,6 +263,9 @@ public:
 
   virtual void print_on(outputStream* out, bool print_contents = false);
 };
+
+
+
 
 // Iterator class that provides a convenient way to iterate over the
 // regions of a FreeRegionList.

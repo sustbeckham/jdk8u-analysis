@@ -419,6 +419,7 @@ void G1CollectorPolicy::initialize_alignments() {
 
 
 
+// G1HeapRegionSize初始化(之前算的Region大小)，以及新生代的内存上下界初始化
 void G1CollectorPolicy::initialize_flags() {
 
   // 自适应调整，如果没手工设置G1HeapRegionSize，此时把计算出的堆/2048的Region大小结果同步过去
@@ -438,7 +439,8 @@ void G1CollectorPolicy::initialize_flags() {
   CollectorPolicy::initialize_flags();
 
 
-
+  // 初始化新生代的内存分配模式(sizer_kind), 是否内存自适应分配(adaptive_size), 以及新生代的最小/最大期望内存。
+  // 具体实现就在当前类的下面。
   _young_gen_sizer = new G1YoungGenSizer(); // Must be after call to initialize_flags
 }
 
@@ -456,18 +458,27 @@ void G1CollectorPolicy::post_heap_initialize() {
 
 
 
+// 初始化新生代的内存分配模式(sizer_kind), 是否内存自适应分配(adaptive_size), 以及新生代的最小/最大期望内存。
 G1YoungGenSizer::G1YoungGenSizer() : _sizer_kind(SizerDefaults), _adaptive_size(true),
         _min_desired_young_length(0), _max_desired_young_length(0) {
+
+  // 手工设置了NewRatio的情况
   if (FLAG_IS_CMDLINE(NewRatio)) {
+    // 这里和g1CollectorPolicy.hpp中的注释相对应(此时if跳出，继续判断其它场景)
+    // NewSize和MaxNewSize会覆盖(override)NewRatio。因此，如果NewRatio与NewSize或MaxNewSize中的
+    // 任何一个同时设置，NewRatio将被忽略。
     if (FLAG_IS_CMDLINE(NewSize) || FLAG_IS_CMDLINE(MaxNewSize)) {
       warning("-XX:NewSize and -XX:MaxNewSize override -XX:NewRatio");
     } else {
+      // 回写年轻代内存分配类型&此时内存固定不能自适应(新生代占据内存的比例为手工设置的NewRatio)
       _sizer_kind = SizerNewRatio;
       _adaptive_size = false;
       return;
     }
   }
 
+
+  // 异常数据兼容: 如果NewSize比MaxNewSize还大，则整体的MaxNewSize就以NewSize为准
   if (NewSize > MaxNewSize) {
     if (FLAG_IS_CMDLINE(MaxNewSize)) {
       warning("NewSize (" SIZE_FORMAT "k) is greater than the MaxNewSize (" SIZE_FORMAT "k). "
@@ -477,24 +488,40 @@ G1YoungGenSizer::G1YoungGenSizer() : _sizer_kind(SizerDefaults), _adaptive_size(
     MaxNewSize = NewSize;
   }
 
+
+  // 如果手工设置了NewSize
   if (FLAG_IS_CMDLINE(NewSize)) {
+    // 则新生代的最小大小就是NewSize，此时就可以明确最少得多少个Region(直接除以之前算好的Region大小即可)
     _min_desired_young_length = MAX2((uint) (NewSize / HeapRegion::GrainBytes),
                                      1U);
+    // 如果也手工设置了MaxNewSize
     if (FLAG_IS_CMDLINE(MaxNewSize)) {
+      // 则新生代的最大大小就是MaxNewSize，此时就可以明确最大得多少个Region(直接除以之前算好的Region大小即可)
       _max_desired_young_length =
                              MAX2((uint) (MaxNewSize / HeapRegion::GrainBytes),
                                   1U);
+      // 年轻代分配类型也明确了，上下界都确定了
       _sizer_kind = SizerMaxAndNewSize;
+      // 如果刚好手工设置的NewSize=MaxNewSize，此时新生代内存不会自适应(_adaptive_size=false)
       _adaptive_size = _min_desired_young_length != _max_desired_young_length;
     } else {
+      // 仅设置了NewSize的场景, 最小大小使用G1NewSizePercent。
+      // 应该在哪里有个判断暂时还没找到，即G1NewSizePercent算出来的值要大于NewSize
       _sizer_kind = SizerNewSizeOnly;
     }
   } else if (FLAG_IS_CMDLINE(MaxNewSize)) {
+    // 仅手工设置了MaxNewSize，此时新生代上界明确。此时就可以明确最大得多少个Region(直接除以之前算好的Region大小即可)
     _max_desired_young_length =
                              MAX2((uint) (MaxNewSize / HeapRegion::GrainBytes),
                                   1U);
     _sizer_kind = SizerMaxNewSizeOnly;
   }
+
+  // 剩余的情况。即没设置MaxNewSize，NewSize，NewRatio
+  // 此时年轻代大小应允许在堆大小的G1NewSizePercent到G1MaxNewSizePercent之间。
+  // 这就是就是当前方法的构造器
+  // _sizer_kind(SizerDefaults), _adaptive_size(true)  默认的新生代分配且自适应
+  // _min_desired_young_length(0), _max_desired_young_length(0) 这块应该在其他地方重新基于percent再算一遍
 }
 
 
