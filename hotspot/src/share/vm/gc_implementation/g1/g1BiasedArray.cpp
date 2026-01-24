@@ -26,6 +26,10 @@
 #include "gc_implementation/g1/g1BiasedArray.hpp"
 #include "memory/padded.inline.hpp"
 
+
+
+
+// 猜测应是用于创建卡表(CardTable)对应的数组(这个cpp实现中只看这个方法就好)
 // Allocate a new array, generic version.
 address G1BiasedMappedArrayBase::create_new_base_array(size_t length, size_t elem_size) {
   assert(length > 0, "just checking");
@@ -33,6 +37,10 @@ address G1BiasedMappedArrayBase::create_new_base_array(size_t length, size_t ele
   return PaddedPrimitiveArray<u_char, mtGC>::create_unfreeable(length * elem_size);
 }
 
+
+
+
+// 下面的都是和测试验证相关的不看
 #ifndef PRODUCT
 void G1BiasedMappedArrayBase::verify_index(idx_t index) const {
   guarantee(_base != NULL, "Array not initialized");
@@ -141,9 +149,7 @@ public:
     assert(num_zeros == 3, "must be");
   }
 };
-
 void TestG1BiasedArray_test() {
   TestMappedArray::test_biasedarray();
 }
-
 #endif

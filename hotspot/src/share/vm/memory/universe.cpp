@@ -647,7 +647,6 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
-  tty->print_cr("[Fire-Constant] CHECK_UNHANDLED_OOPS=%d.", CHECK_UNHANDLED_OOPS);
 
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
@@ -659,6 +658,7 @@ jint universe_init() {
 
   // 确定没有引用的
   // tty->print_cr("[Fire-Constant] _MSC_VER=%d.", _MSC_VER); error: '_MSC_VER' was not declared in this scope
+  // tty->print_cr("[Fire-Constant] CHECK_UNHANDLED_OOPS=%d.", CHECK_UNHANDLED_OOPS); error: 'CHECK_UNHANDLED_OOPS' was not declared in this scope;
 
 
   assert(!Universe::_fully_initialized, "called after initialize_vtables");
@@ -724,6 +724,9 @@ jint universe_init() {
 static const uint64_t UnscaledOopHeapMax = (uint64_t(max_juint) + 1);
 // 32Gb
 // OopEncodingHeapMax == UnscaledOopHeapMax << LogMinObjAlignmentInBytes;
+
+
+
 
 char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_OOP_MODE mode) {
   assert(is_size_aligned((size_t)OopEncodingHeapMax, alignment), "Must be");
@@ -978,6 +981,7 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
       || use_large_pages, "Wrong alignment to use large pages");
 
   char* addr = Universe::preferred_heap_base(total_reserved, alignment, Universe::UnscaledNarrowOop);
+  tty->print_cr("[Fire] init reserve heap use UnscaledNarrowOop. [" INTPTR_FORMAT "]", addr);
 
   ReservedHeapSpace total_rs(total_reserved, alignment, use_large_pages, addr);
 
@@ -987,6 +991,7 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
       // region is taken already, for example, by 'java' launcher.
       // Try again to reserver heap higher.
       addr = Universe::preferred_heap_base(total_reserved, alignment, Universe::ZeroBasedNarrowOop);
+      tty->print_cr("[Fire] init reserve heap use ZeroBasedNarrowOop. [" INTPTR_FORMAT "]", addr);
 
       ReservedHeapSpace total_rs0(total_reserved, alignment,
           use_large_pages, addr);
@@ -994,6 +999,7 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
       if (addr != NULL && !total_rs0.is_reserved()) {
         // Failed to reserve at specified address again - give up.
         addr = Universe::preferred_heap_base(total_reserved, alignment, Universe::HeapBasedNarrowOop);
+        tty->print_cr("[Fire] init reserve heap use HeapBasedNarrowOop. [" INTPTR_FORMAT "]", addr);
         assert(addr == NULL, "");
 
         ReservedHeapSpace total_rs1(total_reserved, alignment,
@@ -1018,6 +1024,8 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
   }
   return total_rs;
 }
+
+
 
 
 // It's the caller's responsibility to ensure glitch-freedom

@@ -90,6 +90,9 @@ inline HeapWord* G1CollectedHeap::bottom_addr_for_region(uint index) const {
   return _hrm.reserved().start() + index * HeapRegion::GrainWords;
 }
 
+
+
+
 template <class T>
 inline HeapRegion* G1CollectedHeap::heap_region_containing_raw(const T addr) const {
   assert(addr != NULL, "invariant");
@@ -99,6 +102,9 @@ inline HeapRegion* G1CollectedHeap::heap_region_containing_raw(const T addr) con
   return _hrm.addr_to_region((HeapWord*) addr);
 }
 
+
+
+
 template <class T>
 inline HeapRegion* G1CollectedHeap::heap_region_containing(const T addr) const {
   HeapRegion* hr = heap_region_containing_raw(addr);
@@ -107,6 +113,9 @@ inline HeapRegion* G1CollectedHeap::heap_region_containing(const T addr) const {
   }
   return hr;
 }
+
+
+
 
 inline void G1CollectedHeap::reset_gc_time_stamp() {
   _gc_time_stamp = 0;

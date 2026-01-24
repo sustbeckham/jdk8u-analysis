@@ -34,10 +34,17 @@ class HeapRegion;
 class HeapRegionClosure;
 class FreeRegionList;
 
+
+
+
+// 这个结构就是G1BiasedMappedArray的套皮
 class G1HeapRegionTable : public G1BiasedMappedArray<HeapRegion*> {
  protected:
   virtual HeapRegion* default_value() const { return NULL; }
 };
+
+
+
 
 // This class keeps track of the actual heap memory, auxiliary data
 // and its metadata (i.e., HeapRegion instances) and the list of free regions.

@@ -30,6 +30,9 @@
 #include "gc_implementation/g1/concurrentG1Refine.hpp"
 #include "memory/allocation.hpp"
 
+
+
+
 void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,
                                G1RegionToSpaceMapper* prev_bitmap,
                                G1RegionToSpaceMapper* next_bitmap,
@@ -54,6 +57,9 @@ void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,
   _available_map.resize(_regions.length(), false);
   _available_map.clear();
 }
+
+
+
 
 bool HeapRegionManager::is_available(uint region) const {
   return _available_map.at(region);

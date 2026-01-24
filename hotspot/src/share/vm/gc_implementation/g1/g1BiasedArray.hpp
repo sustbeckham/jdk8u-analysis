@@ -28,6 +28,9 @@
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
 
+
+
+
 // Implements the common base functionality for arrays that contain provisions
 // for accessing its elements using a biased index.
 // The element type is defined by the instantiating the template.
@@ -50,6 +53,9 @@ protected:
   // Allocate a new array, generic version.
   static address create_new_base_array(size_t length, size_t elem_size);
 
+
+
+
   // Initialize the members of this class. The biased start address of this array
   // is the bias (in elements) multiplied by the element size.
   void initialize_base(address base, size_t length, size_t bias, size_t elem_size, uint shift_by) {
@@ -63,6 +69,9 @@ protected:
     _shift_by = shift_by;
   }
 
+
+
+
   // Allocate and initialize this array to cover the heap addresses in the range
   // of [bottom, end).
   void initialize(HeapWord* bottom, HeapWord* end, size_t target_elem_size_in_bytes, size_t mapping_granularity_in_bytes) {
@@ -75,11 +84,15 @@ protected:
     assert((uintptr_t)end % mapping_granularity_in_bytes == 0,
       err_msg("end mapping area address must be a multiple of mapping granularity %zd, is " PTR_FORMAT,
         mapping_granularity_in_bytes, p2i(end)));
+
     size_t num_target_elems = pointer_delta(end, bottom, mapping_granularity_in_bytes);
     idx_t bias = (uintptr_t)bottom / mapping_granularity_in_bytes;
     address base = create_new_base_array(num_target_elems, target_elem_size_in_bytes);
     initialize_base(base, num_target_elems, bias, target_elem_size_in_bytes, log2_intptr(mapping_granularity_in_bytes));
   }
+
+
+
 
   size_t bias() const { return _bias; }
   uint shift_by() const { return _shift_by; }
@@ -92,6 +105,9 @@ public:
    // Return the length of the array in elements.
    size_t length() const { return _length; }
 };
+
+
+
 
 // Array that provides biased access and mapping from (valid) addresses in the
 // heap into this array.

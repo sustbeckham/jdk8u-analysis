@@ -29,6 +29,9 @@
 #include "gc_implementation/g1/heapRegionManager.hpp"
 #include "gc_implementation/g1/heapRegionSet.inline.hpp"
 
+
+
+
 inline HeapRegion* HeapRegionManager::addr_to_region(HeapWord* addr) const {
   assert(addr < heap_end(),
         err_msg("addr: " PTR_FORMAT " end: " PTR_FORMAT, p2i(addr), p2i(heap_end())));
@@ -38,6 +41,9 @@ inline HeapRegion* HeapRegionManager::addr_to_region(HeapWord* addr) const {
   HeapRegion* hr = _regions.get_by_address(addr);
   return hr;
 }
+
+
+
 
 inline HeapRegion* HeapRegionManager::at(uint index) const {
   assert(is_available(index), "pre-condition");

@@ -1976,7 +1976,7 @@ jint G1CollectedHeap::initialize() {
   // compressed oops mode.
 
   ReservedSpace heap_rs = Universe::reserve_heap(max_byte_size,
-                                                 heap_alignment);
+                                                heap_alignment);
 
   // It is important to do this in a way such that concurrent readers can't
   // temporarily think something is in the heap.  (I've actually seen this
@@ -1999,6 +1999,8 @@ jint G1CollectedHeap::initialize() {
   // Carve out the G1 part of the heap.
 
   ReservedSpace g1_rs = heap_rs.first_part(max_byte_size);
+
+
   G1RegionToSpaceMapper* heap_storage =
     G1RegionToSpaceMapper::create_mapper(g1_rs,
                                          g1_rs.size(),
@@ -2007,6 +2009,7 @@ jint G1CollectedHeap::initialize() {
                                          1,
                                          mtJavaHeap);
   heap_storage->set_mapping_changed_listener(&_listener);
+
 
   // Create storage for the BOT, card table, card counts table (hot card cache) and the bitmaps.
   G1RegionToSpaceMapper* bot_storage =
@@ -2031,7 +2034,11 @@ jint G1CollectedHeap::initialize() {
   G1RegionToSpaceMapper* next_bitmap_storage =
     create_aux_memory_mapper("Next Bitmap", bitmap_size, CMBitMap::mark_distance());
 
+
+  // 初始化顺序G1CollectedHeap -> HeapRegionManager -> G1HeapRegionTable -> G1BiasedMappedArray -> G1BiasedMappedArray
   _hrm.initialize(heap_storage, prev_bitmap_storage, next_bitmap_storage, bot_storage, cardtable_storage, card_counts_storage);
+
+
   g1_barrier_set()->initialize(cardtable_storage);
    // Do later initialization work for concurrent refinement.
   _cg1r->init(card_counts_storage);
