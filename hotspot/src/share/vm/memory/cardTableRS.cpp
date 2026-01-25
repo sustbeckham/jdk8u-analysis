@@ -37,14 +37,22 @@
 #include "gc_implementation/g1/g1SATBCardTableModRefBS.hpp"
 #endif // INCLUDE_ALL_GCS
 
+
+
+
+// 创建入口来自g1CollectedHeap.cpp, 这里的max_covered_regions默认值写死了2。
 CardTableRS::CardTableRS(MemRegion whole_heap,
                          int max_covered_regions) :
   GenRemSet(),
   _cur_youngergen_card_val(youngergenP1_card),
   _regions_to_iterate(max_covered_regions - 1)
 {
+
+
 #if INCLUDE_ALL_GCS
   if (UseG1GC) {
+      // 我们分析G1的时候只看这个分支就好
+      // g1CollectedHeap.cpp -> collectorPolicy.cpp
       _ct_bs = new G1SATBCardTableLoggingModRefBS(whole_heap,
                                                   max_covered_regions);
   } else {
@@ -53,6 +61,8 @@ CardTableRS::CardTableRS(MemRegion whole_heap,
 #else
   _ct_bs = new CardTableModRefBSForCTRS(whole_heap, max_covered_regions);
 #endif
+
+
   _ct_bs->initialize();
   set_bs(_ct_bs);
   _last_cur_val_in_gen = NEW_C_HEAP_ARRAY3(jbyte, GenCollectedHeap::max_gens + 1,
@@ -65,6 +75,9 @@ CardTableRS::CardTableRS(MemRegion whole_heap,
   }
   _ct_bs->set_CTRS(this);
 }
+
+
+
 
 CardTableRS::~CardTableRS() {
   if (_ct_bs) {

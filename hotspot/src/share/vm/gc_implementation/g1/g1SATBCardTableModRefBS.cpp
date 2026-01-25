@@ -31,12 +31,19 @@
 #include "runtime/orderAccess.inline.hpp"
 #include "runtime/thread.inline.hpp"
 
+
+
+
+// g1CollectedHeap.cpp -> collectorPolicy.cpp -> cardTableRS.cpp -> g1SATBCardTableModRefBS.cpp(当前类引用)
 G1SATBCardTableModRefBS::G1SATBCardTableModRefBS(MemRegion whole_heap,
                                                  int max_covered_regions) :
     CardTableModRefBSForCTRS(whole_heap, max_covered_regions)
 {
   _kind = G1SATBCT;
 }
+
+
+
 
 void G1SATBCardTableModRefBS::enqueue(oop pre_val) {
   // Nulls should have been already filtered.
@@ -103,6 +110,9 @@ bool G1SATBCardTableModRefBS::mark_card_deferred(size_t card_index) {
   return true;
 }
 
+
+
+
 void G1SATBCardTableModRefBS::g1_mark_as_young(const MemRegion& mr) {
   jbyte *const first = byte_for(mr.start());
   jbyte *const last = byte_after(mr.last());
@@ -118,11 +128,17 @@ void G1SATBCardTableModRefBS::g1_mark_as_young(const MemRegion& mr) {
   }
 }
 
+
+
+
 #ifndef PRODUCT
 void G1SATBCardTableModRefBS::verify_g1_young_region(MemRegion mr) {
   verify_region(mr, g1_young_gen,  true);
 }
 #endif
+
+
+
 
 void G1SATBCardTableLoggingModRefBSChangedListener::on_commit(uint start_idx, size_t num_regions, bool zero_filled) {
   // Default value for a clean card on the card table is -1. So we cannot take advantage of the zero_filled parameter.
@@ -130,6 +146,10 @@ void G1SATBCardTableLoggingModRefBSChangedListener::on_commit(uint start_idx, si
   _card_table->clear(mr);
 }
 
+
+
+
+// g1CollectedHeap.cpp -> collectorPolicy.cpp -> cardTableRS.cpp
 G1SATBCardTableLoggingModRefBS::
 G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
                                int max_covered_regions) :
@@ -140,6 +160,9 @@ G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
   _kind = G1SATBCTLogging;
   _listener.set_card_table(this);
 }
+
+
+
 
 void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   mapper->set_mapping_changed_listener(&_listener);
@@ -172,6 +195,9 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
                   p2i(byte_map_base));
   }
 }
+
+
+
 
 void
 G1SATBCardTableLoggingModRefBS::write_ref_field_work(void* field,

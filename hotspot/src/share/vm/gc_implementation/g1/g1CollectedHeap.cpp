@@ -1928,6 +1928,9 @@ G1RegionToSpaceMapper* G1CollectedHeap::create_aux_memory_mapper(const char* des
   return result;
 }
 
+
+
+
 jint G1CollectedHeap::initialize() {
   CollectedHeap::pre_initialize();
   os::enable_vtime();

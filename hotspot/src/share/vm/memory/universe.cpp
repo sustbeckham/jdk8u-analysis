@@ -980,8 +980,11 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
       || UseParallelGC
       || use_large_pages, "Wrong alignment to use large pages");
 
+
   char* addr = Universe::preferred_heap_base(total_reserved, alignment, Universe::UnscaledNarrowOop);
   tty->print_cr("[Fire] init reserve heap use UnscaledNarrowOop. [" INTPTR_FORMAT "]", addr);
+  // 这里有个问题，按理说addr如果获取成功的话应该地址是从0开始的，但是优先看GC问题，先不纠结
+
 
   ReservedHeapSpace total_rs(total_reserved, alignment, use_large_pages, addr);
 

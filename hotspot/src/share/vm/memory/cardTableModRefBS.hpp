@@ -28,6 +28,7 @@
 #include "memory/modRefBarrierSet.hpp"
 #include "oops/oop.hpp"
 #include "oops/oop.inline2.hpp"
+#include "utilities/ostream.hpp"
 
 // This kind of "BarrierSet" allows a "CollectedHeap" to detect and
 // enumerate ref fields that have been modified (since the last
@@ -121,9 +122,12 @@ class CardTableModRefBS: public ModRefBarrierSet {
   MemRegion _guard_region;
 
  protected:
+
   // Initialization utilities; covered_words is the size of the covered region
   // in, um, words.
   inline size_t cards_required(size_t covered_words) {
+    tty->print_cr("[Fire-TEMP] card_size=%d, sizeof(HeapWord)=%d, card_size_in_words=%d.", card_size, sizeof(HeapWord), card_size_in_words);
+
     // Add one for a guard card, used to detect errors.
     const size_t words = align_size_up(covered_words, card_size_in_words);
     return words / card_size_in_words + 1;
@@ -475,6 +479,9 @@ public:
 
 class CardTableRS;
 
+
+
+
 // A specialization for the CardTableRS gen rem set.
 class CardTableModRefBSForCTRS: public CardTableModRefBS {
   CardTableRS* _rs;
@@ -482,6 +489,9 @@ protected:
   bool card_will_be_scanned(jbyte cv);
   bool card_may_have_been_dirty(jbyte cv);
 public:
+
+
+  // g1CollectedHeap.cpp -> collectorPolicy.cpp -> cardTableRS.cpp -> g1SATBCardTableModRefBS.cpp
   CardTableModRefBSForCTRS(MemRegion whole_heap,
                            int max_covered_regions) :
     CardTableModRefBS(whole_heap, max_covered_regions) {}

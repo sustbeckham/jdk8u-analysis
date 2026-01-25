@@ -53,6 +53,11 @@ size_t CardTableModRefBS::compute_byte_map_size()
   return align_size_up(_guard_index + 1, MAX2(_page_size, granularity));
 }
 
+
+
+
+// 这个初始化的链路太长了
+// g1CollectedHeap.cpp -> collectorPolicy.cpp -> cardTableRS.cpp -> g1SATBCardTableModRefBS.cpp -> cardTableModRefBS.hpp
 CardTableModRefBS::CardTableModRefBS(MemRegion whole_heap,
                                      int max_covered_regions):
   ModRefBarrierSet(max_covered_regions),
@@ -85,6 +90,9 @@ CardTableModRefBS::CardTableModRefBS(MemRegion whole_heap,
     vm_exit_during_initialization("Could not allocate card table covered region set.");
   }
 }
+
+
+
 
 void CardTableModRefBS::initialize() {
   _guard_index = cards_required(_whole_heap.word_size()) - 1;

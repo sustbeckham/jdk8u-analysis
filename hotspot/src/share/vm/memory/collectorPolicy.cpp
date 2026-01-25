@@ -163,10 +163,17 @@ bool CollectorPolicy::use_should_clear_all_soft_refs(bool v) {
   return result;
 }
 
+
+
+
+// 创建入口来自g1CollectedHeap.cpp, 这里的max_covered_regions默认值写死了2。
 GenRemSet* CollectorPolicy::create_rem_set(MemRegion whole_heap,
                                            int max_covered_regions) {
   return new CardTableRS(whole_heap, max_covered_regions);
 }
+
+
+
 
 void CollectorPolicy::cleared_all_soft_refs() {
   // If near gc overhear limit, continue to clear SoftRefs.  SoftRefs may
