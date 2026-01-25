@@ -113,6 +113,8 @@ public:
 };
 
 
+
+
 class ClearLoggedCardTableEntryClosure: public CardTableEntryClosure {
   size_t _num_processed;
   CardTableModRefBS* _ctbs;
@@ -1955,9 +1957,6 @@ jint G1CollectedHeap::initialize() {
   size_t init_byte_size = collector_policy()->initial_heap_byte_size();
   size_t max_byte_size = collector_policy()->max_heap_byte_size();
   size_t heap_alignment = collector_policy()->heap_alignment();
-
-  //tty->print_cr("[Fire-TEMP] init_byte_size=%d, max_byte_size=%d, heap_alignment=%s.", init_byte_size, max_byte_size, heap_alignment);
-
 
   // Ensure that the sizes are properly aligned.
   Universe::check_alignment(init_byte_size, HeapRegion::GrainBytes, "g1 heap");

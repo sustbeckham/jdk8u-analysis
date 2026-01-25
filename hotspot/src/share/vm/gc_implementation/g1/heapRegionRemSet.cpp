@@ -35,6 +35,7 @@
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/growableArray.hpp"
+#include "utilities/ostream.hpp"
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
@@ -73,7 +74,12 @@ protected:
     _collision_list_next(NULL), _next(NULL), _prev(NULL)
   {}
 
+
+
+
+  // typedef int CardIdx_t; 在g1CollectedHeap.hpp中定义了这个CardIdx_t, 其实就是个int
   void add_card_work(CardIdx_t from_card, bool par) {
+    tty->print_cr("[Fire-TEMP] add_card_work. from_card=%d. par=%d.", UseParallelGC, par);
     if (!_bm.at(from_card)) {
       if (par) {
         if (_bm.par_at_put(from_card, 1)) {
@@ -85,6 +91,9 @@ protected:
       }
     }
   }
+
+
+
 
   void add_reference_work(OopOrNarrowOopStar from, bool par) {
     // Must make this robust in case "from" is not in "_hr", because of
@@ -116,6 +125,9 @@ protected:
       add_card_work(from_card, par);
     }
   }
+
+
+
 
 public:
 
@@ -1256,6 +1268,10 @@ HeapRegionRemSet::finish_cleanup_task(HRRSCleanupTask* hrrs_cleanup_task) {
   SparsePRT::finish_cleanup_task(hrrs_cleanup_task);
 }
 
+
+
+
+// 测试的代码先不看......
 #ifndef PRODUCT
 void PerRegionTable::test_fl_mem_size() {
   PerRegionTable* dummy = alloc(NULL);
