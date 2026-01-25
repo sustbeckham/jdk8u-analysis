@@ -30,6 +30,7 @@
 #include "runtime/mutexLocker.hpp"
 #include "runtime/orderAccess.inline.hpp"
 #include "runtime/thread.inline.hpp"
+#include "utilities/ostream.hpp"
 
 
 
@@ -169,8 +170,12 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
 
   _byte_map_size = mapper->reserved().byte_size();
 
+
+  // 返回CardTable的单个Card囊括了多少个HeapWord的信息(内存隐含的告知当前Card按照512来分)
   _guard_index = cards_required(_whole_heap.word_size()) - 1;
   _last_valid_index = _guard_index - 1;
+  tty->print_cr("[Fire-TEMP] _whole_heap.word_size()=%d, _guard_index=%d.", _whole_heap.word_size(), _guard_index);
+
 
   HeapWord* low_bound  = _whole_heap.start();
   HeapWord* high_bound = _whole_heap.end();

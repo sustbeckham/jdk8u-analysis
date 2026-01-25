@@ -123,15 +123,17 @@ class CardTableModRefBS: public ModRefBarrierSet {
 
  protected:
 
+
+  // 返回CardTable的单个Card囊括了多少个HeapWord的信息
   // Initialization utilities; covered_words is the size of the covered region
   // in, um, words.
   inline size_t cards_required(size_t covered_words) {
-    tty->print_cr("[Fire-TEMP] card_size=%d, sizeof(HeapWord)=%d, card_size_in_words=%d.", card_size, sizeof(HeapWord), card_size_in_words);
-
+    // (已做实际日志验证)一个card512B, 最多容纳64个HeapWord(+1后返回的是65)
     // Add one for a guard card, used to detect errors.
     const size_t words = align_size_up(covered_words, card_size_in_words);
     return words / card_size_in_words + 1;
   }
+
 
   inline size_t compute_byte_map_size();
 
@@ -269,12 +271,18 @@ class CardTableModRefBS: public ModRefBarrierSet {
                                 size_t    lowest_non_clean_chunk_size);
 
 public:
+
+
+  // (已经实测验证)
+  // 这里的左移9位，等同于2的9次方=512。而sizeof(HeapWord)之前已知是8，则card_size_in_words=64
+  // 这意味着一个card512B, 最多容纳64个HeapWord
   // Constants
   enum SomePublicConstants {
     card_shift                  = 9,
     card_size                   = 1 << card_shift,
     card_size_in_words          = card_size / sizeof(HeapWord)
   };
+
 
   static int clean_card_val()      { return clean_card; }
   static int clean_card_mask_val() { return clean_card_mask; }
