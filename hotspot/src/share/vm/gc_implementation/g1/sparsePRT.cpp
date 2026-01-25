@@ -394,6 +394,8 @@ void SparsePRT::add_to_expanded_list(SparsePRT* sprt) {
 }
 
 
+
+
 SparsePRT* SparsePRT::get_from_expanded_list() {
   SparsePRT* hd = _head_expanded_list;
   while (hd != NULL) {
@@ -410,6 +412,9 @@ SparsePRT* SparsePRT::get_from_expanded_list() {
   }
   return NULL;
 }
+
+
+
 
 void SparsePRT::reset_for_cleanup_tasks() {
   _head_expanded_list = NULL;
@@ -444,6 +449,9 @@ bool SparsePRT::should_be_on_expanded_list() {
   return expanded();
 }
 
+
+
+
 void SparsePRT::cleanup_all() {
   // First clean up all expanded tables so they agree on next and cur.
   SparsePRT* sprt = get_from_expanded_list();
@@ -452,6 +460,8 @@ void SparsePRT::cleanup_all() {
     sprt = get_from_expanded_list();
   }
 }
+
+
 
 
 SparsePRT::SparsePRT(HeapRegion* hr) :

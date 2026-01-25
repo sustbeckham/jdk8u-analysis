@@ -298,9 +298,15 @@ void G1RemSet::updateRS(DirtyCardQueue* into_cset_dcq, uint worker_i) {
   _g1->iterate_dirty_card_closure(&into_cset_update_rs_cl, into_cset_dcq, false, worker_i);
 }
 
+
+
+
 void G1RemSet::cleanupHRRS() {
   HeapRegionRemSet::cleanup();
 }
+
+
+
 
 void G1RemSet::oops_into_collection_set_do(G1ParPushHeapRSClosure* oc,
                                            CodeBlobClosure* code_root_cl,

@@ -945,9 +945,15 @@ void HeapRegionRemSet::print() {
 }
 #endif
 
+
+
+
 void HeapRegionRemSet::cleanup() {
   SparsePRT::cleanup_all();
 }
+
+
+
 
 void HeapRegionRemSet::clear() {
   MutexLockerEx x(&_m, Mutex::_no_safepoint_check_flag);

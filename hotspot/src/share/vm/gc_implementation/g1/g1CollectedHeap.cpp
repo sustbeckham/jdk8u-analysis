@@ -1956,6 +1956,9 @@ jint G1CollectedHeap::initialize() {
   size_t max_byte_size = collector_policy()->max_heap_byte_size();
   size_t heap_alignment = collector_policy()->heap_alignment();
 
+  tty->print_cr("[Fire-TEMP] init_byte_size=%d, max_byte_size=%d, heap_alignment=%d.", init_byte_size, max_byte_size, heap_alignment);
+
+
   // Ensure that the sizes are properly aligned.
   Universe::check_alignment(init_byte_size, HeapRegion::GrainBytes, "g1 heap");
   Universe::check_alignment(max_byte_size, HeapRegion::GrainBytes, "g1 heap");
@@ -4139,6 +4142,8 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
 
         g1_policy()->finalize_cset(target_pause_time_ms, evacuation_info);
 
+
+        // 这里的HRRS指的是HeapRegionRemSet
         // Make sure the remembered sets are up to date. This needs to be
         // done before register_humongous_regions_with_cset(), because the
         // remembered sets are used there to choose eager reclaim candidates.
