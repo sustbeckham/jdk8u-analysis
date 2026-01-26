@@ -1,2 +1,2 @@
-./jdk8u/jdk8u-analysis/build/linux-x86_64-normal-server-slowdebug/jdk/bin/javac /jdk8u/jdk8u-analysis/test/G1VerifyMixGC.java
-./jdk8u/jdk8u-analysis/build/linux-x86_64-normal-server-slowdebug/jdk/bin/java -Xms4096m -Xmx4096m -XX:G1HeapRegionSize=16m -XX:+UseG1GC G1VerifyMixGC
+/jdk8u/jdk8u-analysis/build/linux-x86_64-normal-server-slowdebug/jdk/bin/javac /jdk8u/jdk8u-analysis/test/G1VerifyMixGC.java
+/jdk8u/jdk8u-analysis/build/linux-x86_64-normal-server-slowdebug/jdk/bin/java -Xms4096m -Xmx4096m -XX:G1HeapRegionSize=16m -XX:+UseG1GC G1VerifyMixGC
