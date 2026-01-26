@@ -79,7 +79,7 @@ protected:
 
   // typedef int CardIdx_t; 在g1CollectedHeap.hpp中定义了这个CardIdx_t, 其实就是个int
   void add_card_work(CardIdx_t from_card, bool par) {
-    //tty->print_cr("[Fire-TEMP] add_card_work. from_card=%d. par=%d.", UseParallelGC, par);
+    tty->print_cr("[Fire-TEMP] add_card_work. from_card=%d. par=%d.", UseParallelGC, par);
     if (!_bm.at(from_card)) {
       if (par) {
         if (_bm.par_at_put(from_card, 1)) {
