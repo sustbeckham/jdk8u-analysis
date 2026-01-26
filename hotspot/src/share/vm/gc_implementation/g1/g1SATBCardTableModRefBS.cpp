@@ -185,11 +185,17 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   HeapWord* low_bound  = _whole_heap.start();
   HeapWord* high_bound = _whole_heap.end();
 
+
+  // ?
   _cur_covered_regions = 1;
   _covered[0] = _whole_heap;
 
+
   _byte_map = (jbyte*) mapper->reserved().start();
   byte_map_base = _byte_map - (uintptr_t(low_bound) >> card_shift);
+
+  tty->print_cr("[Fire-g1-structure] " INTPTR_FORMAT " " INTPTR_FORMAT " " INTPTR_FORMAT " " , low_bound, high_bound, mapper->reserved().start());
+
   assert(byte_for(low_bound) == &_byte_map[0], "Checking start of map");
   assert(byte_for(high_bound-1) <= &_byte_map[_last_valid_index], "Checking end of map");
 
