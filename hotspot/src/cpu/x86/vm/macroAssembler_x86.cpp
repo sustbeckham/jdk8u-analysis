@@ -4273,8 +4273,12 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
   bind(done);
 }
 
-void MacroAssembler::g1_write_barrier_post(Register store_addr,
-                                           Register new_val,
+
+
+
+// 以下全文使用nodeA.next = nodeB来举例
+void MacroAssembler::g1_write_barrier_post(Register store_addr,   // next的地址
+                                           Register new_val,      // nodeB的值
                                            Register thread,
                                            Register tmp,
                                            Register tmp2) {
@@ -4282,11 +4286,16 @@ void MacroAssembler::g1_write_barrier_post(Register store_addr,
   assert(thread == r15_thread, "must be");
 #endif // _LP64
 
+  // 注意这是线程维度的，所以代码敢这么直接拿不用考虑同步加锁的问题
+  // queue_index: 获取DCQ中的_index元素位置，即数据当前写入位置
+  // buffer: 获取DCQ中的_buf元素位置，即实际存储数据的字段偏移量
   Address queue_index(thread, in_bytes(JavaThread::dirty_card_queue_offset() +
                                        PtrQueue::byte_offset_of_index()));
   Address buffer(thread, in_bytes(JavaThread::dirty_card_queue_offset() +
                                        PtrQueue::byte_offset_of_buf()));
 
+
+  // 如果是G1，这个barrier_set在G1CollectedHeap::initialize()时完成初始化
   BarrierSet* bs = Universe::heap()->barrier_set();
   CardTableModRefBS* ct = (CardTableModRefBS*)bs;
   assert(sizeof(*ct->byte_map_base) == sizeof(jbyte), "adjust this code");
@@ -4294,6 +4303,12 @@ void MacroAssembler::g1_write_barrier_post(Register store_addr,
   Label done;
   Label runtime;
 
+
+  // [DeepSeek也确认是这样]
+  // 1. 判断诸如这样的代码nodeA.next = nodeB，next和nodeB是不是在同一个Region。
+  // 2. next如果和nodeB在同一个Region，则异或完成后，二进制高位会为0，两者内存差距且会在Region大小的范围内
+  // 3. 再来一次右移20位(实际根据Region大小计算得出)把低位也消除，如果在一个Region，则此时结果必为0.
+  // 4. 有趣的数学计算。
   // Does store cross heap regions?
 
   movptr(tmp, store_addr);
@@ -4301,40 +4316,55 @@ void MacroAssembler::g1_write_barrier_post(Register store_addr,
   shrptr(tmp, HeapRegion::LogOfHRGrainBytes);
   jcc(Assembler::equal, done);
 
+
+  // 不在同一个Region，但是被赋值为空了，比如nodeA.next = NULL 这种。如果是空也跳出。
   // crosses regions, storing NULL?
 
   cmpptr(new_val, (int32_t) NULL_WORD);
   jcc(Assembler::equal, done);
 
+
+  // 所以到这里的一定是 nodeA.next = nodeB，但是nodeB还不为空的情况。
   // storing region crossing non-NULL, is card already dirty?
 
   const Register card_addr = tmp;
   const Register cardtable = tmp2;
 
+  // nodeA.next的地址
   movptr(card_addr, store_addr);
+  // 等价于除512，因为被管理的区域中每512B对应卡表中的一项(卡表中一项为1B)。这里等于是拿到了卡表的"key"，基于这个"key"，后续可以知道是不是dirtyCard
   shrptr(card_addr, CardTableModRefBS::card_shift);
+  // 卡表的"key"叠加基地址，这才是真正的"key"
   // Do not use ExternalAddress to load 'byte_map_base', since 'byte_map_base' is NOT
   // a valid address and therefore is not properly handled by the relocation code.
   movptr(cardtable, (intptr_t)ct->byte_map_base);
   addptr(card_addr, cardtable);
 
+  // 年轻代的卡不关心
   cmpb(Address(card_addr, 0), (int)G1SATBCardTableModRefBS::g1_young_card_val());
   jcc(Assembler::equal, done);
 
+  // 不是dirty卡不关心
   membar(Assembler::Membar_mask_bits(Assembler::StoreLoad));
   cmpb(Address(card_addr, 0), (int)CardTableModRefBS::dirty_card_val());
   jcc(Assembler::equal, done);
 
 
+  // OK, 确定是跨Region引用，写入脏卡标记
   // storing a region crossing, non-NULL oop, card is clean.
   // dirty card and log.
 
   movb(Address(card_addr, 0), (int)CardTableModRefBS::dirty_card_val());
 
+  // 如果dcq线程队列满了，直接执行后续的g1_wb_post逻辑
   cmpl(queue_index, 0);
   jcc(Assembler::equal, runtime);
+
+  // dcq线程队列还没满，index递减
   subl(queue_index, wordSize);
   movptr(tmp2, buffer);
+
+  // 等于是队列入card_addr这个元素(这个队列是ThreadLocal维度的)
 #ifdef _LP64
   movslq(rscratch1, queue_index);
   addq(tmp2, rscratch1);
@@ -4343,12 +4373,17 @@ void MacroAssembler::g1_write_barrier_post(Register store_addr,
   addl(tmp2, queue_index);
   movl(Address(tmp2, 0), card_addr);
 #endif
+
+
   jmp(done);
 
   bind(runtime);
   // save the live input values
   push(store_addr);
   push(new_val);
+
+
+  // 确定是跨Region引用，后置的writeBarrier处理，回到vm内部代码继续执行(这里依然尝试写入本地线程的DCQ, 因为满会进一步写入全局维度的DCQS)
 #ifdef _LP64
   call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::g1_wb_post), card_addr, r15_thread);
 #else
@@ -4356,6 +4391,8 @@ void MacroAssembler::g1_write_barrier_post(Register store_addr,
   call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::g1_wb_post), card_addr, thread);
   pop(thread);
 #endif
+
+
   pop(new_val);
   pop(store_addr);
 
@@ -4364,6 +4401,8 @@ void MacroAssembler::g1_write_barrier_post(Register store_addr,
 
 #endif // INCLUDE_ALL_GCS
 //////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 void MacroAssembler::store_check(Register obj) {

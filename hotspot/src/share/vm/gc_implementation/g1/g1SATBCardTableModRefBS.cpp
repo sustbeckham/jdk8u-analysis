@@ -165,15 +165,21 @@ G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
 
 
 
+// ** 系统启动时，初始化CardTableRS::CardTableRS
+// ** 初始化 _ct_bs = new G1SATBCardTableLoggingModRefBS 之后
+// ** 进一步调用 _ct_bs->initialize(); 到这里完成初始化工作
 void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   mapper->set_mapping_changed_listener(&_listener);
 
   _byte_map_size = mapper->reserved().byte_size();
 
 
-  // 虽然这里返回了下标，但是实际上它返回CardTable的单个Card囊括了多少个HeapWord的信息(内存隐含的告知当前Card按照512来分)
+  // ** cards_required()函数定义在cardTableModRefBS.hpp中
+  // ** 内部定义的card_size_in_words=64，即单个card可以容纳64个HeapWord(就是512byte)。在SomePublicConstants这个枚举中有定义
+  // ** 所以这里实际的计算整个内存可以分成多少个512byte，比如4GB的内存，卡表的大小就是8388608。
   _guard_index = cards_required(_whole_heap.word_size()) - 1;
   _last_valid_index = _guard_index - 1;
+  tty->print_cr("[Fire-g1-structure] card_table_size=%d.", _guard_index);
 
 
   HeapWord* low_bound  = _whole_heap.start();

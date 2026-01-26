@@ -46,6 +46,9 @@ class KlassRemSet {
   void clear_mod_union();
 };
 
+
+
+
 class GenRemSet: public CHeapObj<mtGC> {
   friend class Generation;
 

@@ -72,6 +72,9 @@ void ConcurrentG1RefineThread::initialize() {
   }
 }
 
+
+
+
 void ConcurrentG1RefineThread::sample_young_list_rs_lengths() {
   SuspendibleThreadSetJoiner sts;
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
@@ -162,6 +165,9 @@ void ConcurrentG1RefineThread::deactivate() {
   }
 }
 
+
+
+
 void ConcurrentG1RefineThread::run() {
   initialize_in_thread();
   wait_for_universe_init();
@@ -223,6 +229,9 @@ void ConcurrentG1RefineThread::run() {
   assert(_should_terminate, "just checking");
   terminate();
 }
+
+
+
 
 void ConcurrentG1RefineThread::stop() {
   // it is ok to take late safepoints here, if needed

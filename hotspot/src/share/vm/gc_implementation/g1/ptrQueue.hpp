@@ -142,6 +142,9 @@ public:
     return byte_ind * oopSize;
   }
 
+
+
+
   // To support compiler.
   static ByteSize byte_offset_of_index() {
     return byte_offset_of(PtrQueue, _index);
@@ -260,6 +263,10 @@ public:
   // Create an empty ptr queue set.
   PtrQueueSet(bool notify_when_complete = false);
 
+
+
+
+  // 如果是G1的DCQS创建，同时假设是8核，则这里的process_completed_threshold=24，max_completed_queue=48。
   // Because of init-order concerns, we can't pass these as constructor
   // arguments.
   void initialize(Monitor* cbl_mon, Mutex* fl_lock,
@@ -274,6 +281,9 @@ public:
     _fl_lock = fl_lock;
     _fl_owner = (fl_owner != NULL) ? fl_owner : this;
   }
+
+
+
 
   // Return an empty oop array of size _sz (required to be non-zero).
   void** allocate_buffer();

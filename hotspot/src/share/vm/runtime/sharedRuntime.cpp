@@ -230,10 +230,23 @@ JRT_LEAF(void, SharedRuntime::g1_wb_pre(oopDesc* orig, JavaThread *thread))
   thread->satb_mark_queue().enqueue(orig);
 JRT_END
 
+
+
+
+// 从macroAssembler_x86.cpp的g1_write_barrier_post感觉描述的意思是，能执行当前g1_wb_post，就说明g1已经知道当前是个跨带引用了...
+// 这里应该就是[后置写入屏障]。这里的[pointer store]意思是指讲一个对象的引用存储到另一个对象的字段中。举例说明:
+// Node nodeA = new Node();
+// Node nodeB = new Node();
+// nodeA.next = nodeB;    --> 这里就是 pointer store
+// ** dirty_card_queue()的内部是个ptrQueue。
+// ** 这里的card_addr是内部汇编已经算出的dirtyCard的地址
 // G1 write-barrier post: executed after a pointer store.
 JRT_LEAF(void, SharedRuntime::g1_wb_post(void* card_addr, JavaThread* thread))
   thread->dirty_card_queue().enqueue(card_addr);
 JRT_END
+
+
+
 
 #endif // INCLUDE_ALL_GCS
 

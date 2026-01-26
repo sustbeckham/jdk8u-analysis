@@ -57,19 +57,28 @@ void PtrQueue::flush_impl() {
 }
 
 
+
+
 void PtrQueue::enqueue_known_active(void* ptr) {
   assert(0 <= _index && _index <= _sz, "Invariant.");
   assert(_index == 0 || _buf != NULL, "invariant");
 
+
+  // 处理队列满了的情况
   while (_index == 0) {
     handle_zero_index();
   }
 
+
+  // 入队列
   assert(_index > 0, "postcondition");
   _index -= oopSize;
   _buf[byte_index_to_index((int)_index)] = ptr;
   assert(0 <= _index && _index <= _sz, "Invariant.");
 }
+
+
+
 
 void PtrQueue::locking_enqueue_completed_buffer(void** buf) {
   assert(_lock->owned_by_self(), "Required.");
@@ -139,6 +148,10 @@ void PtrQueueSet::reduce_free_list() {
   }
 }
 
+
+
+
+// 处理队列满了的情况
 void PtrQueue::handle_zero_index() {
   assert(_index == 0, "Precondition.");
 
@@ -214,6 +227,9 @@ bool PtrQueueSet::process_or_enqueue_complete_buffer(void** buf) {
   return false;
 }
 
+
+
+
 void PtrQueueSet::enqueue_complete_buffer(void** buf, size_t index) {
   MutexLockerEx x(_cbl_mon, Mutex::_no_safepoint_check_flag);
   BufferNode* cbn = BufferNode::new_from_buffer(buf);
@@ -236,6 +252,9 @@ void PtrQueueSet::enqueue_complete_buffer(void** buf, size_t index) {
   }
   debug_only(assert_completed_buffer_list_len_correct_locked());
 }
+
+
+
 
 int PtrQueueSet::completed_buffers_list_length() {
   int n = 0;

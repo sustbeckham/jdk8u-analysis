@@ -271,6 +271,9 @@ public:
   static void test_fl_mem_size();
 };
 
+
+
+
 PerRegionTable* PerRegionTable::_free_list = NULL;
 
 size_t OtherRegionsTable::_max_fine_entries = 0;
@@ -584,6 +587,9 @@ OtherRegionsTable::find_region_table(size_t ind, HeapRegion* hr) const {
   // Loop postcondition is the method postcondition.
   return prt;
 }
+
+
+
 
 jint OtherRegionsTable::_n_coarsenings = 0;
 

@@ -45,6 +45,9 @@ bool DirtyCardQueue::apply_closure(CardTableEntryClosure* cl,
   return res;
 }
 
+
+
+
 bool DirtyCardQueue::apply_closure_to_buffer(CardTableEntryClosure* cl,
                                              void** buf,
                                              size_t index, size_t sz,
@@ -63,6 +66,9 @@ bool DirtyCardQueue::apply_closure_to_buffer(CardTableEntryClosure* cl,
   }
   return true;
 }
+
+
+
 
 #ifdef _MSC_VER // the use of 'this' below gets a warning, make it go away
 #pragma warning( disable:4355 ) // 'this' : used in base member initializer list
@@ -83,6 +89,11 @@ uint DirtyCardQueueSet::num_par_ids() {
   return (uint)os::initial_active_processor_count();
 }
 
+
+
+
+// 在8核机器上暂认为yellow_zone()=24即可(即这里process_completed_threshold)
+// 在8核机器上暂认为red_zone()=48即可(即这里max_completed_queue)
 void DirtyCardQueueSet::initialize(CardTableEntryClosure* cl, Monitor* cbl_mon, Mutex* fl_lock,
                                    int process_completed_threshold,
                                    int max_completed_queue,
@@ -90,10 +101,17 @@ void DirtyCardQueueSet::initialize(CardTableEntryClosure* cl, Monitor* cbl_mon, 
   _mut_process_closure = cl;
   PtrQueueSet::initialize(cbl_mon, fl_lock, process_completed_threshold,
                           max_completed_queue, fl_owner);
+
+  // G1UpdateBufferSize的默认长度是256.
   set_buffer_size(G1UpdateBufferSize);
+
+
   _shared_dirty_card_queue.set_lock(lock);
   _free_ids = new FreeIdSet((int) num_par_ids(), _cbl_mon);
 }
+
+
+
 
 void DirtyCardQueueSet::handle_zero_index_for_thread(JavaThread* t) {
   t->dirty_card_queue().handle_zero_index();

@@ -1,0 +1,5 @@
+G1
+=====
+1. refine线程 https://segmentfault.com/a/1190000021761004
+
+2. [重点学习] https://lotabout.me/books/JVM-G1/algo/gcs

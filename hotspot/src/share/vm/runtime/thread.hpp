@@ -1672,8 +1672,11 @@ public:
     return _satb_mark_queue_set;
   }
 
+
   // Dirty card queue support
   DirtyCardQueue& dirty_card_queue() { return _dirty_card_queue; }
+
+
   static DirtyCardQueueSet& dirty_card_queue_set() {
     return _dirty_card_queue_set;
   }

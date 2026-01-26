@@ -1990,9 +1990,12 @@ jint G1CollectedHeap::initialize() {
   _reserved.set_start((HeapWord*)heap_rs.base());
   _reserved.set_end((HeapWord*)(heap_rs.base() + heap_rs.size()));
 
+
   // Create the gen rem set (and barrier set) for the entire reserved region.
   _rem_set = collector_policy()->create_rem_set(_reserved, 2);
   set_barrier_set(rem_set()->bs());
+
+
   if (!barrier_set()->is_a(BarrierSet::G1SATBCTLogging)) {
     vm_exit_during_initialization("G1 requires a G1SATBLoggingCardTableModRefBS");
     return JNI_ENOMEM;
@@ -2099,6 +2102,10 @@ jint G1CollectedHeap::initialize() {
                                                G1SATBProcessCompletedThreshold,
                                                Shared_SATB_Q_lock);
 
+
+  // DCQS
+  // 在8核机器上暂认为yellow_zone()=24即可
+  // 在8核机器上暂认为red_zone()=48即可
   JavaThread::dirty_card_queue_set().initialize(_refine_cte_cl,
                                                 DirtyCardQ_CBL_mon,
                                                 DirtyCardQ_FL_lock,
@@ -2114,6 +2121,8 @@ jint G1CollectedHeap::initialize() {
                                     Shared_DirtyCardQ_lock,
                                     &JavaThread::dirty_card_queue_set());
 
+
+  // 进一步去dirtyCardQueue.cpp去初始化DCQS，代码见DirtyCardQueueSet::initialize
   // Initialize the card queue set used to hold cards containing
   // references into the collection set.
   _into_cset_dirty_card_queue_set.initialize(NULL, // Should never be called by the Java code

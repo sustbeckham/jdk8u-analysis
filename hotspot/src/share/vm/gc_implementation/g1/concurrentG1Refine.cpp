@@ -33,21 +33,27 @@ ConcurrentG1Refine::ConcurrentG1Refine(G1CollectedHeap* g1h, CardTableEntryClosu
   _threads(NULL), _n_threads(0),
   _hot_card_cache(g1h)
 {
+  // 在8核机器上暂认为G1ConcRefinementGreenZone=8即可
   // Ergomonically select initial concurrent refinement parameters
   if (FLAG_IS_DEFAULT(G1ConcRefinementGreenZone)) {
     FLAG_SET_DEFAULT(G1ConcRefinementGreenZone, MAX2<int>(ParallelGCThreads, 1));
   }
   set_green_zone(G1ConcRefinementGreenZone);
 
+
+  // 在8核机器上暂认为G1ConcRefinementYellowZone=24即可
   if (FLAG_IS_DEFAULT(G1ConcRefinementYellowZone)) {
     FLAG_SET_DEFAULT(G1ConcRefinementYellowZone, green_zone() * 3);
   }
   set_yellow_zone(MAX2<int>(G1ConcRefinementYellowZone, green_zone()));
 
+
+  // 在8核机器上暂认为G1ConcRefinementRedZone=48即可
   if (FLAG_IS_DEFAULT(G1ConcRefinementRedZone)) {
     FLAG_SET_DEFAULT(G1ConcRefinementRedZone, yellow_zone() * 2);
   }
   set_red_zone(MAX2<int>(G1ConcRefinementRedZone, yellow_zone()));
+
 
   _n_worker_threads = thread_num();
   // We need one extra thread to do the young gen rset size sampling.
@@ -72,6 +78,9 @@ ConcurrentG1Refine::ConcurrentG1Refine(G1CollectedHeap* g1h, CardTableEntryClosu
     next = t;
   }
 }
+
+
+
 
 void ConcurrentG1Refine::reset_threshold_step() {
   if (FLAG_IS_DEFAULT(G1ConcRefinementThresholdStep)) {

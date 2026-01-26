@@ -108,10 +108,12 @@ class DirtyCardQueueSet: public PtrQueueSet {
 public:
   DirtyCardQueueSet(bool notify_when_complete = true);
 
+
   void initialize(CardTableEntryClosure* cl, Monitor* cbl_mon, Mutex* fl_lock,
                   int process_completed_threshold,
                   int max_completed_queue,
                   Mutex* lock, PtrQueueSet* fl_owner = NULL);
+
 
   // The number of parallel ids that can be claimed to allow collector or
   // mutator threads to do card-processing work.

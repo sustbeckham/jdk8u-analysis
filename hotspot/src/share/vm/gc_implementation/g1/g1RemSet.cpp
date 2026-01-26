@@ -320,6 +320,8 @@ void G1RemSet::oops_into_collection_set_do(G1ParPushHeapRSClosure* oc,
   assert(worker_i < n_workers(), "sanity");
   _cset_rs_update_cl[worker_i] = oc;
 
+
+  // 注意这个构造函数里创建了DirtyCardQueueSet。这个DirtyCardQueueSet后续被所有线程共用。
   // A DirtyCardQueue that is used to hold cards containing references
   // that point into the collection set. This DCQ is associated with a
   // special DirtyCardQueueSet (see g1CollectedHeap.hpp).  Under normal
@@ -330,6 +332,7 @@ void G1RemSet::oops_into_collection_set_do(G1ParPushHeapRSClosure* oc,
   // failure the cards/buffers in this queue set are passed to the
   // DirtyCardQueueSet that is used to manage RSet updates
   DirtyCardQueue into_cset_dcq(&_g1->into_cset_dirty_card_queue_set());
+
 
   assert((ParallelGCThreads > 0) || worker_i == 0, "invariant");
 
