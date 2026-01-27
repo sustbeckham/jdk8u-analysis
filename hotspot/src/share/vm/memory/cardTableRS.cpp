@@ -63,6 +63,7 @@ CardTableRS::CardTableRS(MemRegion whole_heap,
 #endif
 
 
+  // 按照trace来看，其实这个init什么都没做
   _ct_bs->initialize();
   set_bs(_ct_bs);
   _last_cur_val_in_gen = NEW_C_HEAP_ARRAY3(jbyte, GenCollectedHeap::max_gens + 1,

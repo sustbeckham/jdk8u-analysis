@@ -1347,6 +1347,10 @@ bool os::stack_shadow_pages_available(Thread *thread, methodHandle method) {
   return (sp > (stack_limit + reserved_area));
 }
 
+
+
+
+// 由于我们日常不会使用大页，所以这里直接认为是正常的页大小4k就好
 size_t os::page_size_for_region(size_t region_size, size_t min_pages, bool must_be_aligned) {
   assert(min_pages > 0, "sanity");
   if (UseLargePages) {
@@ -1365,13 +1369,24 @@ size_t os::page_size_for_region(size_t region_size, size_t min_pages, bool must_
   return vm_page_size();
 }
 
+
+
+
+// 由于我们日常不会使用大页，所以这里直接认为是正常的页大小4k就好
 size_t os::page_size_for_region_aligned(size_t region_size, size_t min_pages) {
   return page_size_for_region(region_size, min_pages, true);
 }
 
+
+
+
+// 由于我们日常不会使用大页，所以这里直接认为是正常的页大小4k就好
 size_t os::page_size_for_region_unaligned(size_t region_size, size_t min_pages) {
   return page_size_for_region(region_size, min_pages, false);
 }
+
+
+
 
 #ifndef PRODUCT
 void os::trace_page_sizes(const char* str, const size_t* page_sizes, int count)
@@ -1461,7 +1476,12 @@ bool os::create_stack_guard_pages(char* addr, size_t bytes) {
   return os::pd_create_stack_guard_pages(addr, bytes);
 }
 
+
+
+
+// 多从virtualspace.cpp而来
 char* os::reserve_memory(size_t bytes, char* addr, size_t alignment_hint) {
+  // 这里的pd_reserve_memory和平台相关的函数，进入到os_linux.cpp
   char* result = pd_reserve_memory(bytes, addr, alignment_hint);
   if (result != NULL) {
     MemTracker::record_virtual_memory_reserve((address)result, bytes, CALLER_PC);
@@ -1469,6 +1489,9 @@ char* os::reserve_memory(size_t bytes, char* addr, size_t alignment_hint) {
 
   return result;
 }
+
+
+
 
 char* os::reserve_memory(size_t bytes, char* addr, size_t alignment_hint,
    MEMFLAGS flags) {

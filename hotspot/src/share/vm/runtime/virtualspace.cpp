@@ -52,6 +52,10 @@ ReservedSpace::ReservedSpace() : _base(NULL), _size(0), _noaccess_prefix(0),
     _alignment(0), _special(false), _executable(false) {
 }
 
+
+
+
+// G1内部的create_aux_memory_mapper方法会基于这个构造函数初始化
 ReservedSpace::ReservedSpace(size_t size, size_t preferred_page_size) {
   bool has_preferred_page_size = preferred_page_size != 0;
   // Want to use large pages where possible and pad with small pages.
@@ -64,12 +68,19 @@ ReservedSpace::ReservedSpace(size_t size, size_t preferred_page_size) {
     // alignment. Align the size up.
     size = align_size_up(size, alignment);
   } else {
+    // 非大页，默认走这个分支，默认直接认为是4k即可
     // Don't force the alignment to be large page aligned,
     // since that will waste memory.
     alignment = os::vm_allocation_granularity();
   }
+
+
+  // 使用指定大小，4k对齐，非大页来初始化ReservedSpace模型
   initialize(size, alignment, large_pages, NULL, 0, false);
 }
+
+
+
 
 ReservedSpace::ReservedSpace(size_t size, size_t alignment,
                              bool large,
@@ -114,10 +125,14 @@ static bool failed_to_reserve_as_requested(char* base, char* requested_address,
   return true;
 }
 
+
+
+
 void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
                                char* requested_address,
                                const size_t noaccess_prefix,
                                bool executable) {
+  // granularity直接认为是4K即可
   const size_t granularity = os::vm_allocation_granularity();
   assert((size & (granularity - 1)) == 0,
          "size not aligned to os::vm_allocation_granularity()");
@@ -147,11 +162,15 @@ void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
   bool special = large && !os::can_commit_large_page_memory();
   char* base = NULL;
 
+
+  // 默认情况下noaccess_prefix都是0，不看这个分支
   if (requested_address != 0) {
     requested_address -= noaccess_prefix; // adjust requested address
     assert(requested_address != NULL, "huge noaccess prefix?");
   }
 
+
+  // 这个分支也不看(跟大页相关)
   if (special) {
 
     base = os::reserve_memory_special(size, alignment, requested_address, executable);
@@ -179,6 +198,7 @@ void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
     }
   }
 
+
   if (base == NULL) {
     // Optimistically assume that the OSes returns an aligned base pointer.
     // When reserving a large address range, most OSes seem to align to at
@@ -195,6 +215,9 @@ void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
         base = NULL;
       }
     } else {
+      // ************* 大部分情况下的requested_address是空，直接走这个分支，所以这个方法看着大，实际只用看这一行就行 *************
+      // 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间, 且由于requested_addr大部分时候都为空，所以保留的内存范围由操作系统决策起始地址。
+      // 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
       base = os::reserve_memory(size, NULL, alignment);
     }
 
@@ -224,6 +247,7 @@ void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
   _alignment = alignment;
   _noaccess_prefix = noaccess_prefix;
 
+
   // Assert that if noaccess_prefix is used, it is the same as alignment.
   assert(noaccess_prefix == 0 ||
          noaccess_prefix == _alignment, "noaccess prefix wrong");
@@ -233,6 +257,8 @@ void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
   assert(markOopDesc::encode_pointer_as_mark(&_base[size])->decode_pointer() == &_base[size],
          "area must be distinguisable from marks for mark-sweep");
 }
+
+
 
 
 ReservedSpace::ReservedSpace(char* base, size_t size, size_t alignment,

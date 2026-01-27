@@ -1910,12 +1910,22 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
   guarantee(_task_queues != NULL, "task_queues allocation failure.");
 }
 
+
+
+
 G1RegionToSpaceMapper* G1CollectedHeap::create_aux_memory_mapper(const char* description,
                                                                  size_t size,
                                                                  size_t translation_factor) {
+  // 由于我们日常不会使用大页，所以这里直接认为是正常的页大小4k就好
   size_t preferred_page_size = os::page_size_for_region_unaligned(size, 1);
+
+
+  // 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间, 且由于requested_addr大部分时候都为空，所以保留的内存范围由操作系统决策起始地址。
+  // 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
   // Allocate a new reserved space, preferring to use large pages.
   ReservedSpace rs(size, preferred_page_size);
+
+
   G1RegionToSpaceMapper* result  =
     G1RegionToSpaceMapper::create_mapper(rs,
                                          size,
@@ -1980,6 +1990,7 @@ jint G1CollectedHeap::initialize() {
   // If this happens then we could end up using a non-optimal
   // compressed oops mode.
 
+  tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size);
   ReservedSpace heap_rs = Universe::reserve_heap(max_byte_size,
                                                 heap_alignment);
 
@@ -2020,6 +2031,8 @@ jint G1CollectedHeap::initialize() {
 
 
   // Create storage for the BOT, card table, card counts table (hot card cache) and the bitmaps.
+
+  // 原来BOT是Block offset table的意思，我特么以为是机器人...
   G1RegionToSpaceMapper* bot_storage =
     create_aux_memory_mapper("Block offset table",
                              G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
@@ -2039,6 +2052,7 @@ jint G1CollectedHeap::initialize() {
   size_t bitmap_size = CMBitMap::compute_size(g1_rs.size());
   G1RegionToSpaceMapper* prev_bitmap_storage =
     create_aux_memory_mapper("Prev Bitmap", bitmap_size, CMBitMap::mark_distance());
+
   G1RegionToSpaceMapper* next_bitmap_storage =
     create_aux_memory_mapper("Next Bitmap", bitmap_size, CMBitMap::mark_distance());
 

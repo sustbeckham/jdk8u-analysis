@@ -149,7 +149,10 @@ class os: AllStatic {
   static void   pd_free_memory(char *addr, size_t bytes, size_t alignment_hint);
   static void   pd_realign_memory(char *addr, size_t bytes, size_t alignment_hint);
 
+
+  // 由于我们日常不会使用大页，所以这里直接认为是正常的页大小4k就好
   static size_t page_size_for_region(size_t region_size, size_t min_pages, bool must_be_aligned);
+
 
   static void initialize_initial_active_processor_count();
 

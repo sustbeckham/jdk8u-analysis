@@ -2652,11 +2652,18 @@ int os::vm_page_size() {
   return os::Linux::page_size();
 }
 
+
+
+
+// 直接认为是4k即可
 // Solaris allocates memory by pages.
 int os::vm_allocation_granularity() {
   assert(os::Linux::page_size() != -1, "must call os::init");
   return os::Linux::page_size();
 }
+
+
+
 
 // Rationale behind this function:
 //  current (Mon Apr 25 20:12:18 MSD 2005) oprofile drops samples without executable
@@ -3225,6 +3232,12 @@ bool os::remove_stack_guard_pages(char* addr, size_t size) {
 
 static address _highest_vm_reserved_address = NULL;
 
+
+
+
+// 大部分情况下，上游的requested_address是空，所以这里的fixed是空，表示内存分配位置不固定，由操作系统自行决策
+// 核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间, 且由于requested_addr大部分时候都为空，所以保留的内存范围由操作系统决策起始地址。
+// 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
 // If 'fixed' is true, anon_mmap() will attempt to reserve anonymous memory
 // at 'requested_addr'. If there are existing memory mappings at the same
 // location, however, they will be overwritten. If 'fixed' is false,
@@ -3235,17 +3248,25 @@ static char* anon_mmap(char* requested_addr, size_t bytes, bool fixed) {
   char * addr;
   int flags;
 
+
   flags = MAP_PRIVATE | MAP_NORESERVE | MAP_ANONYMOUS;
+
+
+  // 大部分情况不走这个分支
   if (fixed) {
     assert((uintptr_t)requested_addr % os::Linux::page_size() == 0, "unaligned address");
     flags |= MAP_FIXED;
   }
 
+
+  // 系统调用mmap保留一块大小为bytes的虚拟地址空间, 且由于requested_addr大部分时候都为空，所以保留的内存范围由操作系统决策起始地址。
+  // 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
   // Map reserved/uncommitted pages PROT_NONE so we fail early if we
   // touch an uncommitted page. Otherwise, the read/write might
   // succeed if we have enough swap space to back the physical page.
   addr = (char*)::mmap(requested_addr, bytes, PROT_NONE,
                        flags, -1, 0);
+
 
   if (addr != MAP_FAILED) {
     // anon_mmap() should only get called during VM initialization,
@@ -3259,6 +3280,9 @@ static char* anon_mmap(char* requested_addr, size_t bytes, bool fixed) {
 
   return addr == MAP_FAILED ? NULL : addr;
 }
+
+
+
 
 // Allocate (using mmap, NO_RESERVE, with small pages) at either a given request address
 //   (req_addr != NULL) or with a given alignment.
@@ -3310,10 +3334,16 @@ static int anon_munmap(char * addr, size_t size) {
   return ::munmap(addr, size) == 0;
 }
 
+
+
+
 char* os::pd_reserve_memory(size_t bytes, char* requested_addr,
                          size_t alignment_hint) {
   return anon_mmap(requested_addr, bytes, (requested_addr != NULL));
 }
+
+
+
 
 bool os::pd_release_memory(char* addr, size_t size) {
   return anon_munmap(addr, size);

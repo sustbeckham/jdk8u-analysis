@@ -39,9 +39,12 @@ class ReservedSpace VALUE_OBJ_CLASS_SPEC {
   bool   _special;
   bool   _executable;
 
+
   // ReservedSpace
   ReservedSpace(char* base, size_t size, size_t alignment, bool special,
                 bool executable);
+
+
   void initialize(size_t size, size_t alignment, bool large,
                   char* requested_address,
                   const size_t noaccess_prefix,
@@ -54,11 +57,16 @@ class ReservedSpace VALUE_OBJ_CLASS_SPEC {
  public:
   // Constructor
   ReservedSpace();
+
+
+  // G1内部的create_aux_memory_mapper方法会基于这个构造函数初始化
   // Initialize the reserved space with the given size. If preferred_page_size
   // is set, use this as minimum page size/alignment. This may waste some space
   // if the given size is not aligned to that value, as the reservation will be
   // aligned up to the final alignment in this case.
   ReservedSpace(size_t size, size_t preferred_page_size = 0);
+
+
   ReservedSpace(size_t size, size_t alignment, bool large,
                 char* requested_address = NULL,
                 const size_t noaccess_prefix = 0);
