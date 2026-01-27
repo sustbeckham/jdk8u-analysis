@@ -1989,10 +1989,7 @@ jint G1CollectedHeap::initialize() {
   // address that was requested (i.e. the preferred heap base).
   // If this happens then we could end up using a non-optimal
   // compressed oops mode.
-
-  tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size);
-  tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size/1024);
-  tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size/1024/1024);
+  // 这里之前踩过一个坑。假设申请4G的内存，则这里按照byte的大小是4294967296，超出了日志输出%d的上限(上限int是21亿)
   ReservedSpace heap_rs = Universe::reserve_heap(max_byte_size,
                                                 heap_alignment);
 

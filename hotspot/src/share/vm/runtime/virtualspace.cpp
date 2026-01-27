@@ -128,6 +128,8 @@ static bool failed_to_reserve_as_requested(char* base, char* requested_address,
 
 
 
+// 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间(如果设置了requested_addr从指定地址分配，否则操作系统自行决策起始范围)。
+// 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
 void ReservedSpace::initialize(size_t size, size_t alignment, bool large,
                                char* requested_address,
                                const size_t noaccess_prefix,
@@ -361,6 +363,11 @@ void ReservedSpace::protect_noaccess_prefix(const size_t size) {
          "must be exactly of required size and alignment");
 }
 
+
+
+
+// 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间(如果设置了requested_addr从指定地址分配，否则操作系统自行决策起始范围)。
+// 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
 ReservedHeapSpace::ReservedHeapSpace(size_t size, size_t alignment,
                                      bool large, char* requested_address) :
   ReservedSpace(size, alignment, large,
@@ -376,6 +383,9 @@ ReservedHeapSpace::ReservedHeapSpace(size_t size, size_t alignment,
   // if using compressed oops.
   protect_noaccess_prefix(size);
 }
+
+
+
 
 // Reserve space for code segment.  Same as Java heap only we mark this as
 // executable.

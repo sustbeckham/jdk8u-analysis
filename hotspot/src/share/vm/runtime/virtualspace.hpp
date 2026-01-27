@@ -110,6 +110,11 @@ ReservedSpace ReservedSpace::last_part(size_t partition_size)
   return last_part(partition_size, alignment());
 }
 
+
+
+
+// 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间(如果设置了requested_addr从指定地址分配，否则操作系统自行决策起始范围)。
+// 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
 // Class encapsulating behavior specific of memory space reserved for Java heap
 class ReservedHeapSpace : public ReservedSpace {
 public:
@@ -117,6 +122,9 @@ public:
   ReservedHeapSpace(size_t size, size_t forced_base_alignment,
                     bool large, char* requested_address);
 };
+
+
+
 
 // Class encapsulating behavior specific memory space for Code
 class ReservedCodeSpace : public ReservedSpace {

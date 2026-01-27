@@ -728,12 +728,16 @@ static const uint64_t UnscaledOopHeapMax = (uint64_t(max_juint) + 1);
 
 
 
+// 计算堆起始地址，很重要(https://ask.qcloudimg.com/http-save/yehe-1751832/dplrkvsuxe.png)。
 char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_OOP_MODE mode) {
   assert(is_size_aligned((size_t)OopEncodingHeapMax, alignment), "Must be");
   assert(is_size_aligned((size_t)UnscaledOopHeapMax, alignment), "Must be");
   assert(is_size_aligned(heap_size, alignment), "Must be");
 
+
   uintx heap_base_min_address_aligned = align_size_up(HeapBaseMinAddress, alignment);
+  tty->print_cr("[Fire-Constant] heap_base_min_address_aligned = " SIZE_FORMAT, heap_base_min_address_aligned);
+
 
   size_t base = 0;
 #ifdef _LP64
@@ -966,6 +970,7 @@ void Universe::print_compressed_oops_mode(outputStream* st) {
 
 
 
+// 堆内存申请，我们假设申请4G内存....
 // Reserve the Java heap, which is now the same for all GCs.
 ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
   assert(alignment <= Arguments::conservative_max_heap_alignment(),
@@ -986,8 +991,13 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
   // 这里有个问题，按理说addr如果获取成功的话应该地址是从0开始的，但是优先看GC问题，先不纠结
 
 
+  // 这里会去向操作系统申请4G的内存
+  // 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间(如果设置了requested_addr从指定地址分配，否则操作系统自行决策起始范围)。
+  // 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
   ReservedHeapSpace total_rs(total_reserved, alignment, use_large_pages, addr);
 
+
+  // 大概率是走不到
   if (UseCompressedOops) {
     if (addr != NULL && !total_rs.is_reserved()) {
       // Failed to reserve at specified address - the requested memory
@@ -1014,10 +1024,13 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
     }
   }
 
+
+  // 堆内存分配失败
   if (!total_rs.is_reserved()) {
     vm_exit_during_initialization(err_msg("Could not reserve enough space for " SIZE_FORMAT "KB object heap", total_reserved/K));
     return total_rs;
   }
+
 
   if (UseCompressedOops) {
     // Universe::initialize_heap() will reset this to NULL if unscaled
