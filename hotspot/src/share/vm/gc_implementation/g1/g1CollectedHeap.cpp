@@ -1991,6 +1991,8 @@ jint G1CollectedHeap::initialize() {
   // compressed oops mode.
 
   tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size);
+  tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size/1024);
+  tty->print_cr("[Fire-Temp] max_byte_size=%d.", max_byte_size/1024/1024);
   ReservedSpace heap_rs = Universe::reserve_heap(max_byte_size,
                                                 heap_alignment);
 
