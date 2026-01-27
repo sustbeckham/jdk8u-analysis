@@ -21,11 +21,6 @@
  * questions.
  *
  */
-#include <cxxabi.h>
-#include <dlfcn.h>
-#include <execinfo.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "precompiled.hpp"
 #include "compiler/compileLog.hpp"
 #include "gc_implementation/shared/gcId.hpp"
@@ -36,6 +31,7 @@
 #include "utilities/ostream.hpp"
 #include "utilities/top.hpp"
 #include "utilities/xmlstream.hpp"
+#include "utilities/debug.hpp"
 #ifdef TARGET_OS_FAMILY_linux
 # include "os_linux.inline.hpp"
 #endif
@@ -76,28 +72,12 @@ outputStream::outputStream(int width, bool has_time_stamps) {
 
 // 这个函数我加的，为了方便打印堆栈
 void outputStream::printStackTrace() {
-//    void* array[10];
-//    size_t size;
-//    char** strings;
-//    size = backtrace(array, 10);
-//    strings = backtrace_symbols(array, size);
-//    printf("============= Obtained %zd stack frames. ============= \n", size);
-//    for (size_t i = 0; i < size; i++)
-//        printf("%s\n", strings[i]);
-//    free(strings);
-//    printf("============= END ============= \n");
+  Thread* t = ThreadLocalStorage::get_thread_slow();
 
-    void* stack[20];
-    int frames = backtrace(stack, 20);
-    for (int i = 0; i < frames; i++) {
-        Dl_info info;
-        if (dladdr(stack[i], &info) && info.dli_sname) {
-            int status;
-            char* demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, &status);
-            printf("#%d %s\n", i, demangled ? demangled : info.dli_sname);
-            if (demangled) free(demangled);
-        }
-    }
+  frame fr = os::current_frame();
+
+  char buf[16384];
+  print_native_stack(this, fr, t, buf, sizeof(buf));
 }
 
 
