@@ -21,6 +21,9 @@
  * questions.
  *
  */
+ #include <execinfo.h>
+ #include <stdio.h>
+ #include <stdlib.h>
 #include "precompiled.hpp"
 #include "gc_implementation/g1/g1CollectedHeap.inline.hpp"
 #include "gc_implementation/g1/g1SATBCardTableModRefBS.hpp"
