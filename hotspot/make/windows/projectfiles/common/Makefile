@@ -81,7 +81,7 @@ default:: $(AdditionalTargets) $(JvmtiGeneratedFiles) $(TraceGeneratedFiles)
 !include $(HOTSPOTWORKSPACE)/make/hotspot_version
 
 !if "$(USER_RELEASE_SUFFIX)" != ""
-HOTSPOT_BUILD_VERSION = internal(by Mozilla)-$(USER_RELEASE_SUFFIX)
+HOTSPOT_BUILD_VERSION = internal-$(USER_RELEASE_SUFFIX)
 !else
 HOTSPOT_BUILD_VERSION = internal
 !endif
