@@ -50,6 +50,7 @@ class outputStream : public ResourceObj {
    julong _precount; // number of chars output, less _position
    TimeStamp _stamp; // for time stamps
 
+   void printStackTrace();
    void update_position(const char* s, size_t len);
    static const char* do_vsnprintf(char* buffer, size_t buflen,
                                    const char* format, va_list ap,
