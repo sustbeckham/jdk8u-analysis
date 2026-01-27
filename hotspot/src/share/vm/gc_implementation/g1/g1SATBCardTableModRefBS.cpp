@@ -21,9 +21,6 @@
  * questions.
  *
  */
- #include <execinfo.h>
- #include <stdio.h>
- #include <stdlib.h>
 #include "precompiled.hpp"
 #include "gc_implementation/g1/g1CollectedHeap.inline.hpp"
 #include "gc_implementation/g1/g1SATBCardTableModRefBS.hpp"
@@ -165,23 +162,13 @@ G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
 
 
 
-void printStackTrace() {
-    void* array[10];
-    size_t size;
-    char** strings;
-    size = backtrace(array, 10);
-    strings = backtrace_symbols(array, size);
-    printf("Obtained %zd stack frames.\n", size);
-    for (size_t i = 0; i < size; i++)
-        printf("%s\n", strings[i]);
-    free(strings);
-}
+
 
 // ** 系统启动时，初始化CardTableRS::CardTableRS
 // ** 初始化 _ct_bs = new G1SATBCardTableLoggingModRefBS 之后
 // ** 进一步调用 _ct_bs->initialize(); 到这里完成初始化工作
 void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
-  printStackTrace();
+  tty->printStackTrace();
   tty->print_cr("[Fire] G1SATBCardTableLoggingModRefBS::initialize().");
   mapper->set_mapping_changed_listener(&_listener);
 

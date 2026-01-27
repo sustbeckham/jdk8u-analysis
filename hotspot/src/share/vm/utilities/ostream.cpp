@@ -21,7 +21,11 @@
  * questions.
  *
  */
-
+#include <cxxabi.h>
+#include <dlfcn.h>
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "precompiled.hpp"
 #include "compiler/compileLog.hpp"
 #include "gc_implementation/shared/gcId.hpp"
@@ -66,6 +70,38 @@ outputStream::outputStream(int width, bool has_time_stamps) {
   _indentation = 0;
   if (has_time_stamps)  _stamp.update();
 }
+
+
+
+
+// 这个函数我加的，为了方便打印堆栈
+void printStackTrace() {
+//    void* array[10];
+//    size_t size;
+//    char** strings;
+//    size = backtrace(array, 10);
+//    strings = backtrace_symbols(array, size);
+//    printf("============= Obtained %zd stack frames. ============= \n", size);
+//    for (size_t i = 0; i < size; i++)
+//        printf("%s\n", strings[i]);
+//    free(strings);
+//    printf("============= END ============= \n");
+
+    void* stack[20];
+    int frames = backtrace(stack, 20);
+    for (int i = 0; i < frames; i++) {
+        Dl_info info;
+        if (dladdr(stack[i], &info) && info.dli_sname) {
+            int status;
+            char* demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, &status);
+            printf("#%d %s\n", i, demangled ? demangled : info.dli_sname);
+            if (demangled) free(demangled);
+        }
+    }
+}
+
+
+
 
 void outputStream::update_position(const char* s, size_t len) {
   for (size_t i = 0; i < len; i++) {
