@@ -169,6 +169,7 @@ G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
 // ** 初始化 _ct_bs = new G1SATBCardTableLoggingModRefBS 之后
 // ** 进一步调用 _ct_bs->initialize(); 到这里完成初始化工作
 void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
+  tty->print_cr("[Fire] G1SATBCardTableLoggingModRefBS::initialize().");
   mapper->set_mapping_changed_listener(&_listener);
 
   _byte_map_size = mapper->reserved().byte_size();

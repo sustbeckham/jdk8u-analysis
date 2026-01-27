@@ -35,6 +35,7 @@
 #include "runtime/virtualspace.hpp"
 #include "services/memTracker.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/ostream.hpp"
 #ifdef COMPILER1
 #include "c1/c1_LIR.hpp"
 #include "c1/c1_LIRGenerator.hpp"
@@ -95,6 +96,7 @@ CardTableModRefBS::CardTableModRefBS(MemRegion whole_heap,
 
 
 void CardTableModRefBS::initialize() {
+  tty->print_cr("[Fire] CardTableModRefBS::initialize().");
   _guard_index = cards_required(_whole_heap.word_size()) - 1;
   _last_valid_index = _guard_index - 1;
 
@@ -169,6 +171,9 @@ void CardTableModRefBS::initialize() {
                   p2i(byte_map_base));
   }
 }
+
+
+
 
 CardTableModRefBS::~CardTableModRefBS() {
   if (_covered) {
