@@ -21,9 +21,6 @@
  * questions.
  *
  */
-
-#include <iostream>
-#include <boost/stacktrace.hpp>
 #include "precompiled.hpp"
 #include "gc_implementation/g1/g1CollectedHeap.inline.hpp"
 #include "gc_implementation/g1/g1SATBCardTableModRefBS.hpp"
@@ -170,8 +167,6 @@ G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
 // ** 初始化 _ct_bs = new G1SATBCardTableLoggingModRefBS 之后
 // ** 进一步调用 _ct_bs->initialize(); 到这里完成初始化工作
 void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
-  std::cout << "Here's how it happened:\n" << boost::stacktrace::stacktrace();
-
   tty->print_cr("[Fire] G1SATBCardTableLoggingModRefBS::initialize().");
   mapper->set_mapping_changed_listener(&_listener);
 
