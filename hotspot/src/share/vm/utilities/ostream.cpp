@@ -75,7 +75,7 @@ outputStream::outputStream(int width, bool has_time_stamps) {
 
 
 // 这个函数我加的，为了方便打印堆栈
-void printStackTrace() {
+void outputStream::printStackTrace() {
 //    void* array[10];
 //    size_t size;
 //    char** strings;
