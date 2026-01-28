@@ -735,8 +735,8 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
   assert(is_size_aligned(heap_size, alignment), "Must be");
 
 
+  // 这里默认起始地址为2G，后续还有基于压缩指针的二次计算逻辑
   uintx heap_base_min_address_aligned = align_size_up(HeapBaseMinAddress, alignment);
-  tty->print_cr("[Fire-Constant] heap_base_min_address_aligned = " SIZE_FORMAT, heap_base_min_address_aligned);
 
 
   size_t base = 0;
@@ -745,9 +745,11 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
     assert(mode == UnscaledNarrowOop  ||
            mode == ZeroBasedNarrowOop ||
            mode == HeapBasedNarrowOop, "mode is invalid");
+    // 这个size是堆实际容量加上HeapBaseMinAddress的数量，如果要申请4G的堆，暂时这个total_size是6G了
     const size_t total_size = heap_size + heap_base_min_address_aligned;
     // Return specified base for the first request.
     if (!FLAG_IS_DEFAULT(HeapBaseMinAddress) && (mode == UnscaledNarrowOop)) {
+      // 这个分支走不进来(手工设置了基地址才会进来，但研发谁特么会来设置这个)
       base = heap_base_min_address_aligned;
 
     // If the total size is small enough to allow UnscaledNarrowOop then
@@ -758,7 +760,9 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
         // Use 32-bits oops without encoding and
         // place heap's top on the 4Gb boundary
         base = (UnscaledOopHeapMax - heap_size);
+        tty->print_cr("[Fire-Constant] base = " SIZE_FORMAT, base);
       } else {
+        tty->print_cr("[Fire-Constant] base = else");
         // Can't reserve with NarrowOopShift == 0
         Universe::set_narrow_oop_shift(LogMinObjAlignmentInBytes);
 
