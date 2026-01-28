@@ -647,6 +647,9 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
+  tty->print_cr("[Fire-Constant] UseCompressedClassPointers=%d.", UseCompressedClassPointers);
+  tty->print_cr("[Fire-Constant] UseSharedSpaces=%d.", UseSharedSpaces);
+  tty->print_cr("[Fire-Constant] OopEncodingHeapMax=%d(GB).", OopEncodingHeapMax/1024/1024/1024);
 
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
@@ -757,18 +760,21 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
     } else if ((total_size <= OopEncodingHeapMax) && (mode != HeapBasedNarrowOop)) {
       if ((total_size <= UnscaledOopHeapMax) && (mode == UnscaledNarrowOop) &&
           (Universe::narrow_oop_shift() == 0)) {
+        // 不走这里，因为narrow_oop_shift压缩指针情况下不是0
         // Use 32-bits oops without encoding and
         // place heap's top on the 4Gb boundary
         base = (UnscaledOopHeapMax - heap_size);
-        tty->print_cr("[Fire-Constant] base = " SIZE_FORMAT, base);
       } else {
-        tty->print_cr("[Fire-Constant] base = else");
+        tty->print_cr("[Fire-Constant] base = " SIZE_FORMAT, base);
+
+        // LogMinObjAlignmentInBytes=3
         // Can't reserve with NarrowOopShift == 0
         Universe::set_narrow_oop_shift(LogMinObjAlignmentInBytes);
 
         if (mode == UnscaledNarrowOop ||
             mode == ZeroBasedNarrowOop && total_size <= UnscaledOopHeapMax) {
 
+          // OopEncodingHeapMax的默认值是32GB，意味着压缩指针场景下支持的上限
           // Use zero based compressed oops with encoding and
           // place heap's top on the 32Gb boundary in case
           // total_size > 4Gb or failed to reserve below 4Gb.
