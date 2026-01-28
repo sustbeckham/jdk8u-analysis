@@ -69,12 +69,12 @@ protected:
   }
 
 
+
+
+  // 以整堆分配为例，target_elem_size_in_bytes这里的大小为8，实际上就是sizeof(HeapRegion*)
   // Allocate and initialize this array to cover the heap addresses in the range
   // of [bottom, end).
   void initialize(HeapWord* bottom, HeapWord* end, size_t target_elem_size_in_bytes, size_t mapping_granularity_in_bytes) {
-    tty->print_cr("[Fire-g1-Temp] target_elem_size_in_bytes=%d, sizeof(HeapRegion*)=%d, sizeof(HeapRegion)=%d", target_elem_size_in_bytes, sizeof(HeapRegion*), sizeof(HeapRegion));
-
-
     assert(mapping_granularity_in_bytes > 0, "just checking");
     assert(is_power_of_2(mapping_granularity_in_bytes),
       err_msg("mapping granularity must be power of 2, is %zd", mapping_granularity_in_bytes));
@@ -85,9 +85,16 @@ protected:
       err_msg("end mapping area address must be a multiple of mapping granularity %zd, is " PTR_FORMAT,
         mapping_granularity_in_bytes, p2i(end)));
 
+
+    // 以整堆分配为例，这里的内容代表整堆能分配多少个HeapRegion(参数里的mapping_granularity_in_bytes代表了Region大小，比如我指定了16M)
     size_t num_target_elems = pointer_delta(end, bottom, mapping_granularity_in_bytes);
     idx_t bias = (uintptr_t)bottom / mapping_granularity_in_bytes;
+
+
+    // 以整堆分配为例，num_target_elems是整体的Region个数, target_elem_size_in_bytes是sizeof(HeapRegion*)也就是8 -- 这里感觉只是分配了HeapRegion的内部模型，并不是真实的堆分配
     address base = create_new_base_array(num_target_elems, target_elem_size_in_bytes);
+    tty->print_cr("[Fire-Constant] num_target_elems=%d. target_elem_size_in_bytes=%d", num_target_elems, target_elem_size_in_bytes);
+
     initialize_base(base, num_target_elems, bias, target_elem_size_in_bytes, log2_intptr(mapping_granularity_in_bytes));
   }
 

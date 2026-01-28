@@ -29,7 +29,8 @@
 
 
 
-// 猜测应是用于创建卡表(CardTable)对应的数组(这个cpp实现中只看这个方法就好)
+// 通用的数组分配创建函数，比如以下场景:
+// ** 堆对应的数组HeapRegion*
 // Allocate a new array, generic version.
 address G1BiasedMappedArrayBase::create_new_base_array(size_t length, size_t elem_size) {
   assert(length > 0, "just checking");
