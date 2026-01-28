@@ -27,6 +27,7 @@
 
 #include "memory/allocation.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/ostream.hpp"
 
 
 
@@ -54,8 +55,6 @@ protected:
   static address create_new_base_array(size_t length, size_t elem_size);
 
 
-
-
   // Initialize the members of this class. The biased start address of this array
   // is the bias (in elements) multiplied by the element size.
   void initialize_base(address base, size_t length, size_t bias, size_t elem_size, uint shift_by) {
@@ -70,11 +69,12 @@ protected:
   }
 
 
-
-
   // Allocate and initialize this array to cover the heap addresses in the range
   // of [bottom, end).
   void initialize(HeapWord* bottom, HeapWord* end, size_t target_elem_size_in_bytes, size_t mapping_granularity_in_bytes) {
+    tty->print_cr("[Fire-g1-Temp] target_elem_size_in_bytes=%d, sizeof(HeapRegion*)=%d, sizeof(HeapRegion)=%d", target_elem_size_in_bytes, sizeof(HeapRegion*), sizeof(HeapRegion));
+
+
     assert(mapping_granularity_in_bytes > 0, "just checking");
     assert(is_power_of_2(mapping_granularity_in_bytes),
       err_msg("mapping granularity must be power of 2, is %zd", mapping_granularity_in_bytes));
@@ -181,6 +181,7 @@ protected:
   }
 public:
   G1BiasedMappedArray() {}
+
 
   // Allocate and initialize this array to cover the heap addresses in the range
   // of [bottom, end).

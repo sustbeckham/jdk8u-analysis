@@ -37,7 +37,7 @@ class FreeRegionList;
 
 
 
-// 这个结构就是G1BiasedMappedArray的套皮
+// 这个结构就是G1BiasedMappedArray的套皮，但更重要的是G1BiasedMappedArray是个template，这里的模板是HeapRegion*
 class G1HeapRegionTable : public G1BiasedMappedArray<HeapRegion*> {
  protected:
   virtual HeapRegion* default_value() const { return NULL; }

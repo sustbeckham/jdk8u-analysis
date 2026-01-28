@@ -77,6 +77,9 @@ T** Padded2DArray<T, flags, alignment>::create_unfreeable(uint rows, uint column
   return result;
 }
 
+
+
+
 template <class T, MEMFLAGS flags, size_t alignment>
 T* PaddedPrimitiveArray<T, flags, alignment>::create_unfreeable(size_t length) {
   // Allocate a chunk of memory large enough to allow for some alignment.

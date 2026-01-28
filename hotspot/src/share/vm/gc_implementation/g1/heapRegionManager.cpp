@@ -33,6 +33,7 @@
 
 
 
+// from g1CollectedHeap.cpp
 void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,  // 堆存储
                                G1RegionToSpaceMapper* prev_bitmap,       // 上一次位图的存储 1/64
                                G1RegionToSpaceMapper* next_bitmap,       // 本次位图的存储 1/64
@@ -55,6 +56,7 @@ void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,  // 堆�
 
   // _regions的结构是G1HeapRegionTable(其实就是G1BiasedMappedArray这个模型套了一层皮)
   _regions.initialize(reserved.start(), reserved.end(), HeapRegion::GrainBytes);
+
 
   _available_map.resize(_regions.length(), false);
   _available_map.clear();
