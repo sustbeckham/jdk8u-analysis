@@ -1913,6 +1913,7 @@ G1CollectedHeap::G1CollectedHeap(G1CollectorPolicy* policy_) :
 
 
 
+// 向操作系统申请指定大小的内容，同时使用G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
 G1RegionToSpaceMapper* G1CollectedHeap::create_aux_memory_mapper(const char* description,
                                                                  size_t size,
                                                                  size_t translation_factor) {
@@ -1926,6 +1927,7 @@ G1RegionToSpaceMapper* G1CollectedHeap::create_aux_memory_mapper(const char* des
   ReservedSpace rs(size, preferred_page_size);
 
 
+  // G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
   G1RegionToSpaceMapper* result  =
     G1RegionToSpaceMapper::create_mapper(rs,
                                          size,
@@ -2036,18 +2038,23 @@ jint G1CollectedHeap::initialize() {
                                          1,
                                          mtJavaHeap);
   heap_storage->set_mapping_changed_listener(&_listener);
-  tty->print_cr("[Fire-g1-heap] G1RegionToSpaceMapper - listener. [" INTPTR_FORMAT "]", &_listener);
 
 
   // Create storage for the BOT, card table, card counts table (hot card cache) and the bitmaps.
 
+
   // 原来BOT是Block offset table的意思，我特么以为是机器人...
+  // 向操作系统申请指定大小的内容，同时使用G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
+  // 4G的堆内存情况下BOT大小为8388608=8M，内存映射比例为1/512
+  // compute_size: 返回给定的内存一共可以分为多少个slot(每64个HeapWord，512byte算作一个slot)
   G1RegionToSpaceMapper* bot_storage =
     create_aux_memory_mapper("Block offset table",
                              G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
                              G1BlockOffsetSharedArray::N_bytes);
 
 
+  // compute_size的计算过程在g1SATBCardTableModRefBS.hpp, 计算过程基本同上，不在赘述
+  // 4G的堆内存情况下卡表大小为8388608=8M，内存映射比例为1/512
   ReservedSpace cardtable_rs(G1SATBCardTableLoggingModRefBS::compute_size(g1_rs.size() / HeapWordSize));
   G1RegionToSpaceMapper* cardtable_storage =
     create_aux_memory_mapper("Card table",
@@ -2055,17 +2062,18 @@ jint G1CollectedHeap::initialize() {
                              G1BlockOffsetSharedArray::N_bytes);
 
 
+  // 4G的堆内存情况下Card counts table(不知道怎么翻译)大小为8388608=8M，内存映射比例为1/512
   G1RegionToSpaceMapper* card_counts_storage =
     create_aux_memory_mapper("Card counts table",
                              G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
                              G1BlockOffsetSharedArray::N_bytes);
 
 
+  // 4G的堆内存情况下Prev位图和Next位图大小都为67108864=64M
+  // 内存映射比例为1/64(例如每个对象大小是 8 字节，一个对象只需要 1 bit 标记，于是标记位图大小只需要内存的1/64 即可)
   size_t bitmap_size = CMBitMap::compute_size(g1_rs.size());
   G1RegionToSpaceMapper* prev_bitmap_storage =
     create_aux_memory_mapper("Prev Bitmap", bitmap_size, CMBitMap::mark_distance());
-
-
   G1RegionToSpaceMapper* next_bitmap_storage =
     create_aux_memory_mapper("Next Bitmap", bitmap_size, CMBitMap::mark_distance());
 
@@ -2198,6 +2206,9 @@ jint G1CollectedHeap::initialize() {
 
   return JNI_OK;
 }
+
+
+
 
 void G1CollectedHeap::stop() {
   // Stop all concurrent threads. We do this to make sure these threads

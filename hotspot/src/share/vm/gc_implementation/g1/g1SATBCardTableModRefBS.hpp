@@ -150,10 +150,13 @@ class G1SATBCardTableLoggingModRefBS: public G1SATBCardTableModRefBS {
   G1SATBCardTableLoggingModRefBSChangedListener _listener;
   DirtyCardQueueSet& _dcqs;
  public:
+
+
   static size_t compute_size(size_t mem_region_size_in_words) {
     size_t number_of_slots = (mem_region_size_in_words / card_size_in_words);
     return ReservedSpace::allocation_align_size_up(number_of_slots);
   }
+
 
   G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
                                  int max_covered_regions);

@@ -81,9 +81,15 @@ class G1RegionsLargerThanCommitSizeMapper : public G1RegionToSpaceMapper {
     // G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
     G1RegionToSpaceMapper(rs, actual_size, page_size, alloc_granularity, type),
 
+
+    // 真实的含义：1个内存页(page)实际关联多大的内存分配
+    // [正常的堆内存初始化情况下]: commit_factor=1，返回4096KB, 等于是1:1的关系，每4k的卡表内存page也就只能反应4k的内存
+    // [卡表内存初始化情况下]: commit_factor=8，返回2MB，等于1:8的关系，每4k的卡表内存page能实际反应2MB的内存
     // 单个Region内多少个page(16M的情况下应是16*1024/4=4096)
     _pages_per_region(alloc_granularity / (page_size * commit_factor)) {
 
+
+    // resize回头再看...
     guarantee(alloc_granularity >= page_size, "allocation granularity smaller than commit granularity");
     _commit_map.resize(rs.size() * commit_factor / alloc_granularity, /* in_resource_area */ false);
   }
@@ -96,6 +102,9 @@ class G1RegionsLargerThanCommitSizeMapper : public G1RegionToSpaceMapper {
     _commit_map.set_range(start_idx, start_idx + num_regions);
     fire_on_commit(start_idx, num_regions, zero_filled);
   }
+
+
+
 
   virtual void uncommit_regions(uint start_idx, size_t num_regions) {
     _storage.uncommit((size_t)start_idx * _pages_per_region, num_regions * _pages_per_region);

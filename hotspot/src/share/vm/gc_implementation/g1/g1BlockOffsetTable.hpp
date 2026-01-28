@@ -117,6 +117,9 @@ class G1BlockOffsetSharedArrayMappingChangedListener : public G1MappingChangedLi
   }
 };
 
+
+
+
 // This implementation of "G1BlockOffsetTable" divides the covered region
 // into "N"-word subregions (where "N" = 2^"LogN".  An array with an entry
 // for each such subregion indicates how far back one must go to find the
@@ -170,19 +173,27 @@ private:
 
 public:
 
+
+  // 返回给定的mem_region_words一共可以分为多少个slot(每64个HeapWord，512byte算作一个slot)
   // Return the number of slots needed for an offset array
   // that covers mem_region_words words.
   static size_t compute_size(size_t mem_region_words) {
+    // 上面代码已经定义了N_words=64，这意味着每64个HeapWord(512byte)算作一个整体区域(也就是这里的slot)看待
+    // number_of_slots即给定的mem_region_words一共可以分为多少个slot
     size_t number_of_slots = (mem_region_words / N_words);
     return ReservedSpace::allocation_align_size_up(number_of_slots);
   }
 
+
   enum SomePublicConstants {
     LogN = 9,
-    LogN_words = LogN - LogHeapWordSize,
-    N_bytes = 1 << LogN,
-    N_words = 1 << LogN_words
+    LogN_words = LogN - LogHeapWordSize,   // 6
+    N_bytes = 1 << LogN,                   // 512
+    N_words = 1 << LogN_words              // 64
   };
+
+
+
 
   // Initialize the table to cover from "base" to (at least)
   // "base + init_word_size".  In the future, the table may be expanded
@@ -205,6 +216,9 @@ public:
   }
 };
 
+
+
+
 // And here is the G1BlockOffsetTable subtype that uses the array.
 
 class G1BlockOffsetArray: public G1BlockOffsetTable {
@@ -213,8 +227,8 @@ class G1BlockOffsetArray: public G1BlockOffsetTable {
   friend class VMStructs;
 private:
   enum SomePrivateConstants {
-    N_words = G1BlockOffsetSharedArray::N_words,
-    LogN    = G1BlockOffsetSharedArray::LogN
+    N_words = G1BlockOffsetSharedArray::N_words,    // 64
+    LogN    = G1BlockOffsetSharedArray::LogN        // 9
   };
 
   // This is the array, which can be shared by several BlockOffsetArray's

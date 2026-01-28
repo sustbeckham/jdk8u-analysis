@@ -33,25 +33,27 @@
 
 
 
-void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,
-                               G1RegionToSpaceMapper* prev_bitmap,
-                               G1RegionToSpaceMapper* next_bitmap,
-                               G1RegionToSpaceMapper* bot,
-                               G1RegionToSpaceMapper* cardtable,
-                               G1RegionToSpaceMapper* card_counts) {
+void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,  // 堆存储
+                               G1RegionToSpaceMapper* prev_bitmap,       // 上一次位图的存储 1/64
+                               G1RegionToSpaceMapper* next_bitmap,       // 本次位图的存储 1/64
+                               G1RegionToSpaceMapper* bot,               // Block offset table, 1/512
+                               G1RegionToSpaceMapper* cardtable,         // 卡表, 1/512
+                               G1RegionToSpaceMapper* card_counts) {     // card count table, 1/512
   _allocated_heapregions_length = 0;
 
   _heap_mapper = heap_storage;
-
   _prev_bitmap_mapper = prev_bitmap;
   _next_bitmap_mapper = next_bitmap;
-
   _bot_mapper = bot;
   _cardtable_mapper = cardtable;
-
   _card_counts_mapper = card_counts;
 
+
+  // 整堆内存的MemRegion引用，这个reserved()内部没做什么事情
   MemRegion reserved = heap_storage->reserved();
+
+
+  // _regions的结构是G1HeapRegionTable(其实就是G1BiasedMappedArray这个模型套了一层皮)
   _regions.initialize(reserved.start(), reserved.end(), HeapRegion::GrainBytes);
 
   _available_map.resize(_regions.length(), false);

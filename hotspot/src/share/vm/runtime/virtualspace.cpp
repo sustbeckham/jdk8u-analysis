@@ -312,9 +312,13 @@ size_t ReservedSpace::page_align_size_down(size_t size) {
 }
 
 
+
+// 4k对齐
 size_t ReservedSpace::allocation_align_size_up(size_t size) {
   return align_size_up(size, os::vm_allocation_granularity());
 }
+
+
 
 
 size_t ReservedSpace::allocation_align_size_down(size_t size) {
