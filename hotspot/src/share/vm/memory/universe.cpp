@@ -784,10 +784,12 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
           if (UseCompressedClassPointers && !UseSharedSpaces &&
               OopEncodingHeapMax <= 32*G) {
             // 能走到这个分支来。UseCompressedClassPointers会在arguments.cpp被动态调整为true，UseSharedSpaces为false。
-
+            // CompressedClassSpaceSize的默认大小是1G
             uint64_t class_space = align_size_up(CompressedClassSpaceSize, alignment);
             assert(is_size_aligned((size_t)OopEncodingHeapMax-class_space,
                    alignment), "difference must be aligned too");
+
+            // 所以这里的new_top换算过来就是31G
             uint64_t new_top = OopEncodingHeapMax-class_space;
 
             if (total_size <= new_top) {
@@ -795,6 +797,10 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
             }
           }
 
+          // 如果是4G的堆申请，这里的起始地址就是31-4=27G(0x00000006c0000000)，这和我验证的日志里得到的结果相符
+          // ** 特殊情况(如果设置了MaxMetaspaceSize且<=1G，其实现在大多数应用都会设置)
+          // ** 以cx为例: MaxMetaspaceSize=512M，CompressedClassSpaceSize = 512M - 8M = 504M
+          // ** 所以其实地址这里是 32G - 504M - 12G = 19976M()
           // Align base to the adjusted top of the heap
           base = heap_top - heap_size;
         }
@@ -804,6 +810,7 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
       // HeapBasedNarrowOop encoding was requested.  So, can't reserve below 32Gb.
       Universe::set_narrow_oop_shift(LogMinObjAlignmentInBytes);
     }
+
 
     // Set narrow_oop_base and narrow_oop_use_implicit_null_checks
     // used in ReservedHeapSpace() constructors.

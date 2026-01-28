@@ -3152,19 +3152,29 @@ void Metaspace::initialize_class_space(ReservedSpace rs) {
 
 #endif
 
+
+
+
 void Metaspace::ergo_initialize() {
+
+  // 大页逻辑忽略不看
   if (DumpSharedSpaces) {
     // Using large pages when dumping the shared archive is currently not implemented.
     FLAG_SET_ERGO(bool, UseLargePagesInMetaspace, false);
   }
 
+
+  // 大页逻辑忽略不看
   size_t page_size = os::vm_page_size();
   if (UseLargePages && UseLargePagesInMetaspace) {
     page_size = os::large_page_size();
   }
 
+
+  // 统一认为是4K就好
   _commit_alignment  = page_size;
   _reserve_alignment = MAX2(page_size, (size_t)os::vm_allocation_granularity());
+
 
   // Do not use FLAG_SET_ERGO to update MaxMetaspaceSize, since this will
   // override if MaxMetaspaceSize was set on the command line or not.
@@ -3187,31 +3197,47 @@ void Metaspace::ergo_initialize() {
   if (MetaspaceSize < 256*K) {
     vm_exit_during_initialization("Too small initial Metaspace size");
   }
+  // 暂时先看G1, 上面的先不看，以cx为例，我们先认为MetaspaceSize=MaxMetaspaceSize=512M
 
+
+  // ?
   MinMetaspaceExpansion = align_size_down_bounded(MinMetaspaceExpansion, _commit_alignment);
   MaxMetaspaceExpansion = align_size_down_bounded(MaxMetaspaceExpansion, _commit_alignment);
 
+
+  // 此时，CompressedClassSpaceSize还是默认值1G。
   CompressedClassSpaceSize = align_size_down_bounded(CompressedClassSpaceSize, _reserve_alignment);
   set_compressed_class_space_size(CompressedClassSpaceSize);
 
+
+  // ** VIRTUALSPACEMULTIPLIER在当前文件定义，值是2
+  // ** InitialBootClassLoaderMetaspaceSize的默认值在64位环境下是4M, 用于控制Java核心类的初始原始数据空间分配
+  //
   // Initial virtual space size will be calculated at global_initialize()
   uintx min_metaspace_sz =
       VIRTUALSPACEMULTIPLIER * InitialBootClassLoaderMetaspaceSize;
   if (UseCompressedClassPointers) {
+    // 看这个分支。min_metaspace_sz上面已经算好是8M
+    // 这里的本意是这样，CompressedClassSpaceSize也算是metaspace的一部分，所以它的大小不能超过MaxMetaspaceSize(非常合理)
     if ((min_metaspace_sz + CompressedClassSpaceSize) >  MaxMetaspaceSize) {
       if (min_metaspace_sz >= MaxMetaspaceSize) {
         vm_exit_during_initialization("MaxMetaspaceSize is too small.");
       } else {
+        // 不报错，做兼容(以CX为例：CompressedClassSpaceSize = 512 - 8M = 504M)
         FLAG_SET_ERGO(uintx, CompressedClassSpaceSize,
                       MaxMetaspaceSize - min_metaspace_sz);
       }
     }
   } else if (min_metaspace_sz >= MaxMetaspaceSize) {
+    // 走不到这个分支
     FLAG_SET_ERGO(uintx, InitialBootClassLoaderMetaspaceSize,
                   min_metaspace_sz);
   }
 
 }
+
+
+
 
 void Metaspace::global_initialize() {
   MetaspaceGC::initialize();

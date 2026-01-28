@@ -1992,6 +1992,8 @@ jint G1CollectedHeap::initialize() {
   // 这里之前踩过一个坑。假设申请4G的内存，则这里按照byte的大小是4294967296，超出了日志输出%d的上限(上限int是21亿)
   ReservedSpace heap_rs = Universe::reserve_heap(max_byte_size,
                                                 heap_alignment);
+  tty->print_cr("[Fire-Constant] heap_alignment=%d.", heap_alignment);
+
 
   // It is important to do this in a way such that concurrent readers can't
   // temporarily think something is in the heap.  (I've actually seen this
