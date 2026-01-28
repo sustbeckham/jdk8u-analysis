@@ -650,6 +650,7 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] UseCompressedClassPointers=%d.", UseCompressedClassPointers);
   tty->print_cr("[Fire-Constant] UseSharedSpaces=%d.", UseSharedSpaces);
   tty->print_cr("[Fire-Constant] OopEncodingHeapMax=%d(GB).", OopEncodingHeapMax/1024/1024/1024);
+  tty->print_cr("[Fire-Constant] CompressedClassSpaceSize=%d(GB).", CompressedClassSpaceSize/1024/1024/1024);
 
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);
@@ -765,8 +766,6 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
         // place heap's top on the 4Gb boundary
         base = (UnscaledOopHeapMax - heap_size);
       } else {
-        tty->print_cr("[Fire-Constant] base = " SIZE_FORMAT, base);
-
         // LogMinObjAlignmentInBytes=3
         // Can't reserve with NarrowOopShift == 0
         Universe::set_narrow_oop_shift(LogMinObjAlignmentInBytes);
@@ -784,6 +783,7 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
           // space so it can be decoded with no base.
           if (UseCompressedClassPointers && !UseSharedSpaces &&
               OopEncodingHeapMax <= 32*G) {
+            // 能走到这个分支来。UseCompressedClassPointers会在arguments.cpp被动态调整为true，UseSharedSpaces为false。
 
             uint64_t class_space = align_size_up(CompressedClassSpaceSize, alignment);
             assert(is_size_aligned((size_t)OopEncodingHeapMax-class_space,
