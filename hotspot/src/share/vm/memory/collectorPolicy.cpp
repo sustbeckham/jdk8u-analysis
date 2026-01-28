@@ -40,6 +40,7 @@
 #include "runtime/thread.inline.hpp"
 #include "runtime/vmThread.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/ostream.hpp"
 #if INCLUDE_ALL_GCS
 #include "gc_implementation/concurrentMarkSweep/cmsAdaptiveSizePolicy.hpp"
 #include "gc_implementation/concurrentMarkSweep/cmsGCAdaptivePolicyCounters.hpp"
@@ -976,6 +977,7 @@ bool GenCollectorPolicy::should_try_older_generation_allocation(
 void MarkSweepPolicy::initialize_alignments() {
   _space_alignment = _gen_alignment = (uintx)Generation::GenGrain;
   _heap_alignment = compute_heap_alignment();
+  tty->printStackTrace();
 }
 
 void MarkSweepPolicy::initialize_generations() {
