@@ -2054,6 +2054,7 @@ jint G1CollectedHeap::initialize() {
                              G1SATBCardTableLoggingModRefBS::compute_size(g1_rs.size() / HeapWordSize),
                              G1BlockOffsetSharedArray::N_bytes);
 
+
   G1RegionToSpaceMapper* card_counts_storage =
     create_aux_memory_mapper("Card counts table",
                              G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
@@ -2070,11 +2071,13 @@ jint G1CollectedHeap::initialize() {
 
 
   // 这里汇总一下数据
-  tty->print_cr("[Fire-g1-heap] Other G1RegionToSpaceMapper. Block offset table: [" INTPTR_FORMAT "]" "Card table: [" INTPTR_FORMAT "]" "Card counts table: [" INTPTR_FORMAT "]" "Prev&Next Bitmap[" INTPTR_FORMAT "]",
+  tty->print_cr("[Fire-g1-heap] Other G1RegionToSpaceMapper. Block offset table:%d, Card table:%d, Card counts table:%d, Prev&Next Bitmap:%d, N_bytes:%d, distance:%d",
         G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
         G1SATBCardTableLoggingModRefBS::compute_size(g1_rs.size() / HeapWordSize),
         G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
-        bitmap_size
+        bitmap_size,
+        G1BlockOffsetSharedArray::N_bytes,
+        CMBitMap::mark_distance()
         );
 
 
