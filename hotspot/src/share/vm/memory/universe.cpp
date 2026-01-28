@@ -732,7 +732,8 @@ static const uint64_t UnscaledOopHeapMax = (uint64_t(max_juint) + 1);
 
 
 
-// 计算堆起始地址，很重要(https://ask.qcloudimg.com/http-save/yehe-1751832/dplrkvsuxe.png)。
+// 计算堆起始地址(取决于要申请堆大小以及MaxMetaspaceSize是否配置)
+// 很重要(https://ask.qcloudimg.com/http-save/yehe-1751832/dplrkvsuxe.png)。
 char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_OOP_MODE mode) {
   assert(is_size_aligned((size_t)OopEncodingHeapMax, alignment), "Must be");
   assert(is_size_aligned((size_t)UnscaledOopHeapMax, alignment), "Must be");
@@ -800,7 +801,8 @@ char* Universe::preferred_heap_base(size_t heap_size, size_t alignment, NARROW_O
           // 如果是4G的堆申请，这里的起始地址就是31-4=27G(0x00000006c0000000)，这和我验证的日志里得到的结果相符
           // ** 特殊情况(如果设置了MaxMetaspaceSize且<=1G，其实现在大多数应用都会设置)
           // ** 以cx为例: MaxMetaspaceSize=512M，CompressedClassSpaceSize = 512M - 8M = 504M
-          // ** 所以其实地址这里是 32G - 504M - 12G = 19976M()
+          // ** 504M需要按照16M的heap_align向上对齐，也就是512M。
+          // ** 所以其实地址这里是 32G - 512M - 12G = 19.5G(0x00000004e0000000)，这和在cx的gc日志中看到的内存下界相符
           // Align base to the adjusted top of the heap
           base = heap_top - heap_size;
         }
@@ -1003,12 +1005,12 @@ ReservedSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
       || use_large_pages, "Wrong alignment to use large pages");
 
 
+  // 计算堆起始地址(取决于要申请堆大小以及MaxMetaspaceSize是否配置)
   char* addr = Universe::preferred_heap_base(total_reserved, alignment, Universe::UnscaledNarrowOop);
-  tty->print_cr("[Fire] init reserve heap use UnscaledNarrowOop. [" INTPTR_FORMAT "]", addr);
-  // 这里有个问题，按理说addr如果获取成功的话应该地址是从0开始的，但是优先看GC问题，先不纠结
+  tty->print_cr("[Fire-g1-heap] init reserve heap use UnscaledNarrowOop. [" INTPTR_FORMAT "]", addr);
 
 
-  // 这里会去向操作系统申请4G的内存
+  // 这里会去向操作系统申请内存
   // 该函数核心能力: 系统调用mmap保留一块大小为bytes的虚拟地址空间(如果设置了requested_addr从指定地址分配，否则操作系统自行决策起始范围)。
   // 由于设置了PROT_NONE，任何对该内存区域的访问（读、写、执行）都会触发SIGSEGV信号(后续会根据实际需要改编保护标志)。
   ReservedHeapSpace total_rs(total_reserved, alignment, use_large_pages, addr);

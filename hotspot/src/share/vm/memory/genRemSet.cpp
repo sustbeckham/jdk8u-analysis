@@ -31,6 +31,10 @@
 // enumerate ref fields that have been modified (since the last
 // enumeration.)
 
+
+
+
+// 可认为是2M即可
 uintx GenRemSet::max_alignment_constraint(Name nm) {
   assert(nm == GenRemSet::CardTable, "Unrecognized GenRemSet type.");
   return CardTableRS::ct_max_alignment_constraint();

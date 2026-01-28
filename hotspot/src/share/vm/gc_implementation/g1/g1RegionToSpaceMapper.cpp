@@ -30,12 +30,20 @@
 #include "services/memTracker.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+
+
+
+// G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
 G1RegionToSpaceMapper::G1RegionToSpaceMapper(ReservedSpace rs,
                                              size_t used_size,
                                              size_t page_size,
                                              size_t region_granularity,
                                              MemoryType type) :
+  // G1PageBasedVirtualSpace的构造函数
+  // 内部只是做了简单的初始化，先暂时理解为G1PageBasedVirtualSpace就是持有指定内存的模型而已
   _storage(rs, used_size, page_size),
+
+
   _region_granularity(region_granularity),
   _listener(NULL),
   _commit_map() {
@@ -45,6 +53,9 @@ G1RegionToSpaceMapper::G1RegionToSpaceMapper(ReservedSpace rs,
   MemTracker::record_virtual_memory_type((address)rs.base(), type);
 }
 
+
+
+
 // G1RegionToSpaceMapper implementation where the region granularity is larger than
 // or the same as the commit granularity.
 // Basically, the space corresponding to one region region spans several OS pages.
@@ -53,18 +64,32 @@ class G1RegionsLargerThanCommitSizeMapper : public G1RegionToSpaceMapper {
   size_t _pages_per_region;
 
  public:
+
+
+
+
+  // G1RegionsLargerThanCommitSizeMapper继承自G1RegionToSpaceMapper，G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
+  // 如下场景会走到
+  // 1. G1初始化时的整堆映射(type=mtJavaHeap)
   G1RegionsLargerThanCommitSizeMapper(ReservedSpace rs,
                                       size_t actual_size,
                                       size_t page_size,
                                       size_t alloc_granularity,
                                       size_t commit_factor,
                                       MemoryType type) :
+    // 实现就在当前类的最上面
+    // G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
     G1RegionToSpaceMapper(rs, actual_size, page_size, alloc_granularity, type),
+
+    // 单个Region内多少个page(16M的情况下应是16*1024/4=4096)
     _pages_per_region(alloc_granularity / (page_size * commit_factor)) {
 
     guarantee(alloc_granularity >= page_size, "allocation granularity smaller than commit granularity");
     _commit_map.resize(rs.size() * commit_factor / alloc_granularity, /* in_resource_area */ false);
   }
+
+
+
 
   virtual void commit_regions(uint start_idx, size_t num_regions) {
     bool zero_filled = _storage.commit((size_t)start_idx * _pages_per_region, num_regions * _pages_per_region);
@@ -77,6 +102,9 @@ class G1RegionsLargerThanCommitSizeMapper : public G1RegionToSpaceMapper {
     _commit_map.clear_range(start_idx, start_idx + num_regions);
   }
 };
+
+
+
 
 // G1RegionToSpaceMapper implementation where the region granularity is smaller
 // than the commit granularity.
@@ -147,6 +175,10 @@ void G1RegionToSpaceMapper::fire_on_commit(uint start_idx, size_t num_regions, b
   }
 }
 
+
+
+
+// G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
 G1RegionToSpaceMapper* G1RegionToSpaceMapper::create_mapper(ReservedSpace rs,
                                                             size_t actual_size,
                                                             size_t page_size,
@@ -155,6 +187,7 @@ G1RegionToSpaceMapper* G1RegionToSpaceMapper::create_mapper(ReservedSpace rs,
                                                             MemoryType type) {
 
   if (region_granularity >= (page_size * commit_factor)) {
+    // 整堆映射走这里(type=mtJavaHeap)
     return new G1RegionsLargerThanCommitSizeMapper(rs, actual_size, page_size, region_granularity, commit_factor, type);
   } else {
     return new G1RegionsSmallerThanCommitSizeMapper(rs, actual_size, page_size, region_granularity, commit_factor, type);

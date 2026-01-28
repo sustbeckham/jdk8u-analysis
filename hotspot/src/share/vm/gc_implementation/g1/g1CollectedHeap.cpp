@@ -1964,9 +1964,12 @@ jint G1CollectedHeap::initialize() {
   // HeapWordSize).
   guarantee(HeapWordSize == wordSize, "HeapWordSize must equal wordSize");
 
+
+  // 需要注意的是heap_alignment在G1CollectorPolicy::initialize_alignments()初始化期间计算完成，值为16M(假设Region为16M的情况下)
   size_t init_byte_size = collector_policy()->initial_heap_byte_size();
   size_t max_byte_size = collector_policy()->max_heap_byte_size();
   size_t heap_alignment = collector_policy()->heap_alignment();
+
 
   // Ensure that the sizes are properly aligned.
   Universe::check_alignment(init_byte_size, HeapRegion::GrainBytes, "g1 heap");
@@ -1990,9 +1993,9 @@ jint G1CollectedHeap::initialize() {
   // If this happens then we could end up using a non-optimal
   // compressed oops mode.
   // 这里之前踩过一个坑。假设申请4G的内存，则这里按照byte的大小是4294967296，超出了日志输出%d的上限(上限int是21亿)
+  // 这里的heap_alignment堆对齐是16M
   ReservedSpace heap_rs = Universe::reserve_heap(max_byte_size,
                                                 heap_alignment);
-  tty->print_cr("[Fire-Constant] heap_alignment=%d.", heap_alignment);
 
 
   // It is important to do this in a way such that concurrent readers can't
@@ -2016,11 +2019,15 @@ jint G1CollectedHeap::initialize() {
   // Also create a G1 rem set.
   _g1_rem_set = new G1RemSet(this, g1_barrier_set());
 
-  // Carve out the G1 part of the heap.
 
+  // Carve out the G1 part of the heap.
+  // 这里就把g1_rs当成整堆好了，这里实际内部的split在这个场景下不生效。
   ReservedSpace g1_rs = heap_rs.first_part(max_byte_size);
 
 
+  // heap_storage代表了整堆的内存映射
+  // G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
+  // ??? 整堆的_listener没看到哪里初始化的...
   G1RegionToSpaceMapper* heap_storage =
     G1RegionToSpaceMapper::create_mapper(g1_rs,
                                          g1_rs.size(),
@@ -2029,6 +2036,7 @@ jint G1CollectedHeap::initialize() {
                                          1,
                                          mtJavaHeap);
   heap_storage->set_mapping_changed_listener(&_listener);
+  tty->print_cr("[Fire-g1-heap] G1RegionToSpaceMapper - listener. [" INTPTR_FORMAT "]", &_listener);
 
 
   // Create storage for the BOT, card table, card counts table (hot card cache) and the bitmaps.
@@ -2038,6 +2046,7 @@ jint G1CollectedHeap::initialize() {
     create_aux_memory_mapper("Block offset table",
                              G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
                              G1BlockOffsetSharedArray::N_bytes);
+
 
   ReservedSpace cardtable_rs(G1SATBCardTableLoggingModRefBS::compute_size(g1_rs.size() / HeapWordSize));
   G1RegionToSpaceMapper* cardtable_storage =
@@ -2050,12 +2059,23 @@ jint G1CollectedHeap::initialize() {
                              G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
                              G1BlockOffsetSharedArray::N_bytes);
 
+
   size_t bitmap_size = CMBitMap::compute_size(g1_rs.size());
   G1RegionToSpaceMapper* prev_bitmap_storage =
     create_aux_memory_mapper("Prev Bitmap", bitmap_size, CMBitMap::mark_distance());
 
+
   G1RegionToSpaceMapper* next_bitmap_storage =
     create_aux_memory_mapper("Next Bitmap", bitmap_size, CMBitMap::mark_distance());
+
+
+  // 这里汇总一下数据
+  tty->print_cr("[Fire-g1-heap] Other G1RegionToSpaceMapper. Block offset table: [" INTPTR_FORMAT "]" "Card table: [" INTPTR_FORMAT "]" "Card counts table: [" INTPTR_FORMAT "]" "Prev&Next Bitmap[" INTPTR_FORMAT "]",
+        G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
+        G1SATBCardTableLoggingModRefBS::compute_size(g1_rs.size() / HeapWordSize),
+        G1BlockOffsetSharedArray::compute_size(g1_rs.size() / HeapWordSize),
+        bitmap_size
+        );
 
 
   // 初始化顺序G1CollectedHeap -> HeapRegionManager -> G1HeapRegionTable -> G1BiasedMappedArray -> G1BiasedMappedArray

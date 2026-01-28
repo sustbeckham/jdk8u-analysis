@@ -58,6 +58,11 @@ BitMap::BitMap(idx_t size_in_bits, bool in_resource_area) :
   resize(size_in_bits, in_resource_area);
 }
 
+
+
+
+// 没太懂...
+// 大多数情况下，size_in_bits代表的是当前申请堆内可以容纳多个page
 void BitMap::resize(idx_t size_in_bits, bool in_resource_area) {
   assert(size_in_bits >= 0, "just checking");
   idx_t old_size_in_words = size_in_words();
@@ -79,6 +84,9 @@ void BitMap::resize(idx_t size_in_bits, bool in_resource_area) {
     clear_range_of_words(old_size_in_words, size_in_words());
   }
 }
+
+
+
 
 void BitMap::set_range_within_word(idx_t beg, idx_t end) {
   // With a valid range (beg <= end), this test ensures that end != 0, as

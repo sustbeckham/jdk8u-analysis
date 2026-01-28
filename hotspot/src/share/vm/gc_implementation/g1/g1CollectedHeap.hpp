@@ -169,6 +169,9 @@ public:
 
 class RefineCardTableEntryClosure;
 
+
+
+
 class G1RegionMappingChangedListener : public G1MappingChangedListener {
  private:
   void reset_from_card_cache(uint start_idx, size_t num_regions);

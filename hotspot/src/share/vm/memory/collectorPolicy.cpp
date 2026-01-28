@@ -970,15 +970,20 @@ bool GenCollectorPolicy::should_try_older_generation_allocation(
 }
 
 
+
+
 //
 // MarkSweepPolicy methods
 //
-
+// 这里我打印了trace跟踪，目前确认不走这里
 void MarkSweepPolicy::initialize_alignments() {
   _space_alignment = _gen_alignment = (uintx)Generation::GenGrain;
   _heap_alignment = compute_heap_alignment();
   tty->printStackTrace();
 }
+
+
+
 
 void MarkSweepPolicy::initialize_generations() {
   _generations = NEW_C_HEAP_ARRAY3(GenerationSpecPtr, number_of_generations(), mtGC, CURRENT_PC,

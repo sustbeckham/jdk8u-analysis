@@ -44,12 +44,20 @@
 #endif
 #include "utilities/bitMap.inline.hpp"
 
+
+
+
+// 先暂时理解为G1PageBasedVirtualSpace就是持有指定内存的模型而已
 G1PageBasedVirtualSpace::G1PageBasedVirtualSpace(ReservedSpace rs, size_t used_size, size_t page_size) :
   _low_boundary(NULL), _high_boundary(NULL), _committed(), _page_size(0), _special(false),
   _dirty(), _executable(false) {
   initialize_with_page_size(rs, used_size, page_size);
 }
 
+
+
+
+// 先暂时理解为G1PageBasedVirtualSpace就是持有指定内存的模型而已
 void G1PageBasedVirtualSpace::initialize_with_page_size(ReservedSpace rs, size_t used_size, size_t page_size) {
   guarantee(rs.is_reserved(), "Given reserved space must have been reserved already.");
 
@@ -82,6 +90,9 @@ void G1PageBasedVirtualSpace::initialize_with_page_size(ReservedSpace rs, size_t
 
   _tail_size = used_size % _page_size;
 }
+
+
+
 
 G1PageBasedVirtualSpace::~G1PageBasedVirtualSpace() {
   release();

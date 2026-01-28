@@ -99,11 +99,17 @@ class ReservedSpace VALUE_OBJ_CLASS_SPEC {
   static size_t allocation_align_size_down(size_t size);
 };
 
+
+
+
 ReservedSpace
 ReservedSpace::first_part(size_t partition_size, bool split, bool realloc)
 {
   return first_part(partition_size, alignment(), split, realloc);
 }
+
+
+
 
 ReservedSpace ReservedSpace::last_part(size_t partition_size)
 {

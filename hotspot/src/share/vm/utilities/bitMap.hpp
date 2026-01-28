@@ -145,6 +145,7 @@ class BitMap VALUE_OBJ_CLASS_SPEC {
   // use the same value for "in_resource_area".)
   void resize(idx_t size_in_bits, bool in_resource_area = true);
 
+
   // Accessing
   idx_t size() const                    { return _size; }
   idx_t size_in_words() const           {

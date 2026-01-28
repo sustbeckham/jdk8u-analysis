@@ -178,7 +178,7 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   // ** 所以这里实际的计算整个内存可以分成多少个512byte，比如4GB的内存，卡表的大小就是8388608。
   _guard_index = cards_required(_whole_heap.word_size()) - 1;
   _last_valid_index = _guard_index - 1;
-  tty->print_cr("[Fire-g1-structure] card_table_size=%d.", _guard_index);
+  tty->print_cr("[Fire-g1-heap] card_table_size=%d.", _guard_index);
 
 
   HeapWord* low_bound  = _whole_heap.start();
@@ -193,7 +193,7 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   _byte_map = (jbyte*) mapper->reserved().start();
   byte_map_base = _byte_map - (uintptr_t(low_bound) >> card_shift);
 
-  tty->print_cr("[Fire-g1-structure] " INTPTR_FORMAT " " INTPTR_FORMAT " " INTPTR_FORMAT " " , low_bound, high_bound, mapper->reserved().start());
+  tty->print_cr("[Fire-g1-heap] G1SATBCardTableLoggingModRefBS::initialize. low_bound:" INTPTR_FORMAT " high_bound:" INTPTR_FORMAT " reserved_start:" INTPTR_FORMAT " " , low_bound, high_bound, mapper->reserved().start());
 
   assert(byte_for(low_bound) == &_byte_map[0], "Checking start of map");
   assert(byte_for(high_bound-1) <= &_byte_map[_last_valid_index], "Checking end of map");

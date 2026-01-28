@@ -663,6 +663,8 @@ MemRegion CardTableModRefBS::dirty_card_range_after_reset(MemRegion mr,
 
 
 
+// card_size=512。vm_page_size()默认看做4k的话，那这里大小应该是2M。
+// [其实不太明白这里为啥要做乘法...2个单位本质都是内存大小呀...]
 uintx CardTableModRefBS::ct_max_alignment_constraint() {
   return card_size * os::vm_page_size();
 }

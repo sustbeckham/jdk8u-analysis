@@ -405,14 +405,13 @@ void G1CollectorPolicy::initialize_alignments() {
   // (该字段定义在collectorPolicy.hpp)对齐大小，其实就是Region大小。如果不指定默认是堆/2048。
   _space_alignment = HeapRegion::GrainBytes;
 
-
+  // 可认为是2M即可
   size_t card_table_alignment = GenRemSet::max_alignment_constraint(GenRemSet::CardTable);
-
 
   // 一般不会采用大页, 所以这里认为是4K就好
   size_t page_size = UseLargePages ? os::large_page_size() : os::vm_page_size();
 
-
+  // 所以G1的堆对齐为16M(和page对齐不太一样)
   _heap_alignment = MAX3(card_table_alignment, _space_alignment, page_size);
 }
 

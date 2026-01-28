@@ -279,9 +279,14 @@ ReservedSpace::ReservedSpace(char* base, size_t size, size_t alignment,
 ReservedSpace ReservedSpace::first_part(size_t partition_size, size_t alignment,
                                         bool split, bool realloc) {
   assert(partition_size <= size(), "partition failed");
+
+
+  // 以堆内存初始化的时候为例，来获取first_part时split取的默认值false，所以这里不看
   if (split) {
     os::split_reserved_memory(base(), size(), partition_size, realloc);
   }
+
+
   ReservedSpace result(base(), partition_size, alignment, special(),
                        executable());
   return result;
