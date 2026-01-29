@@ -266,6 +266,8 @@ bool os::have_special_privileges() {
 }
 
 
+
+
 #ifndef SYS_gettid
 // i386: 224, ia64: 1105, amd64: 186, sparc 143
   #ifdef __ia64__
@@ -287,8 +289,14 @@ bool os::have_special_privileges() {
   #endif
 #endif
 
+
+
+
 // Cpu architecture string
 static char cpu_arch[] = HOTSPOT_LIB_ARCH;
+
+
+
 
 // pid_t gettid()
 //
@@ -307,6 +315,9 @@ pid_t os::Linux::gettid() {
      return (pid_t)rslt;
   }
 }
+
+
+
 
 // Most versions of linux have a bug where the number of processors are
 // determined by looking at the /proc file system.  In a chroot environment,
@@ -750,6 +761,10 @@ bool os::Linux::manually_expand_stack(JavaThread * t, address addr) {
 
 static address highest_vm_reserved_address();
 
+
+
+
+// NPTL默认返回true，里面的逻辑就直接不看了
 // check if it's safe to start a new thread
 static bool _thread_safety_check(Thread* thread) {
   if (os::Linux::is_LinuxThreads() && !os::Linux::is_floating_stack()) {
@@ -793,6 +808,8 @@ static bool _thread_safety_check(Thread* thread) {
 // 新线程开始执行的函数地址
 // Thread start routine for all newly created threads
 static void *java_start(Thread *thread) {
+
+  // 避免cache-line冲突的解决方案，有点太内核了，可以先不看
   // Try to randomize the cache line index of hot stack frames.
   // This helps when threads of the same stack traces evict each other's
   // cache lines. The threads can be either from the same JVM instance, or
@@ -807,6 +824,8 @@ static void *java_start(Thread *thread) {
   OSThread* osthread = thread->osthread();
   Monitor* sync = osthread->startThread_lock();
 
+
+  // NPTL默认返回true，所以不会走到这个if的分支里面
   // non floating stack LinuxThreads needs extra check, see above
   if (!_thread_safety_check(thread)) {
     // notify parent thread
@@ -816,15 +835,20 @@ static void *java_start(Thread *thread) {
     return NULL;
   }
 
+
   // thread_id is kernel thread id (similar to Solaris LWP id)
   osthread->set_thread_id(os::Linux::gettid());
 
+
+  // ========== 不走这里 ==========
   if (UseNUMA) {
     int lgrp_id = os::numa_get_group_id();
     if (lgrp_id != -1) {
       thread->set_lgrp_id(lgrp_id);
     }
   }
+
+
   // initialize signal mask for this thread
   os::Linux::hotspot_sigmask(thread);
 
@@ -966,6 +990,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
     osthread->set_pthread_id(tid);
 
 
+    // 等上面的java_start()执行结束
     // Wait until child thread is either initialized or aborted
     {
       Monitor* sync_with_child = osthread->startThread_lock();

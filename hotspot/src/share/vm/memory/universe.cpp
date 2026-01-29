@@ -643,8 +643,10 @@ void* Universe::non_oop_word() {
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
   tty->print_cr("[Fire-Constant] 1U=%d.", 1U);
-  tty->print_cr("[Fire-Constant] __GNUC__=%d, AMD64=%d, _LP64=%d.", __GNUC__, AMD64, _LP64);
-  tty->print_cr("[Fire-Constant] LinuxThreads=%d, NPTL=%d. UseNUMA=%d.", os::Linux::is_LinuxThreads(), os::Linux::is_NPTL(), UseNUMA);
+  tty->print_cr("[Fire-Constant] OS. AMD64=%d, _LP64=%d, __ia64__=%d, __i386__=%d, __amd64__=%d, __sparc__=%d.", AMD64, _LP64, __ia64__, __i386__, __amd64__, __sparc__);
+  tty->print_cr("[Fire-Constant] LIB. __GNUC__=%d.", __GNUC__);
+  tty->print_cr("[Fire-Constant] CPU. UseNUMA=%d.", UseNUMA);
+  tty->print_cr("[Fire-Constant] Thread. LinuxThreads=%d, NPTL=%d.", os::Linux::is_LinuxThreads(), os::Linux::is_NPTL());
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
