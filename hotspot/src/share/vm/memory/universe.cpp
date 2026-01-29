@@ -643,7 +643,7 @@ void* Universe::non_oop_word() {
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
   tty->print_cr("[Fire-Constant] 1U=%d.", 1U);
-  tty->print_cr("[Fire-Constant] OS. AMD64=%d, _LP64=%d, __ia64__=%d, __i386__=%d, __amd64__=%d, __sparc__=%d.", AMD64, _LP64, __ia64__, __i386__, __amd64__, __sparc__);
+  tty->print_cr("[Fire-Constant] OS. AMD64=%d, _LP64=%d, __amd64__=%d.", AMD64, _LP64, __amd64__);
   tty->print_cr("[Fire-Constant] LIB. __GNUC__=%d.", __GNUC__);
   tty->print_cr("[Fire-Constant] CPU. UseNUMA=%d.", UseNUMA);
   tty->print_cr("[Fire-Constant] Thread. LinuxThreads=%d, NPTL=%d.", os::Linux::is_LinuxThreads(), os::Linux::is_NPTL());
@@ -664,6 +664,9 @@ jint universe_init() {
 
 
   // 确定没有引用的
+  // error: '__ia64__' was not declared in this scope
+  // error: '__i386__' was not declared in this scope
+  // error: '__sparc__' was not declared in this scope
   // tty->print_cr("[Fire-Constant] _MSC_VER=%d.", _MSC_VER); error: '_MSC_VER' was not declared in this scope
   // tty->print_cr("[Fire-Constant] CHECK_UNHANDLED_OOPS=%d.", CHECK_UNHANDLED_OOPS); error: 'CHECK_UNHANDLED_OOPS' was not declared in this scope;
 
