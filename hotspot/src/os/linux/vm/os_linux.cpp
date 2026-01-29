@@ -787,6 +787,10 @@ static bool _thread_safety_check(Thread* thread) {
   }
 }
 
+
+
+
+// 新线程开始执行的函数地址
 // Thread start routine for all newly created threads
 static void *java_start(Thread *thread) {
   // Try to randomize the cache line index of hot stack frames.
@@ -924,17 +928,28 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
   ThreadState state;
 
   {
+    // 现在线程都是NPTL，所以这里忽略
+    // 关于LinuxThreads和NPTL可以看这个文章科普一下 https://www.cnblogs.com/kaleidoscope/p/9626458.html
     // Serialize thread creation if we are running with fixed stack LinuxThreads
     bool lock = os::Linux::is_LinuxThreads() && !os::Linux::is_floating_stack();
     if (lock) {
       os::Linux::createThread_lock()->lock_without_safepoint_check();
     }
 
+
+    // 线程创建
+    // java_start()是新线程开始执行的函数地址，这个函数在当前类的上面有定义。
     pthread_t tid;
     int ret = pthread_create(&tid, &attr, (void* (*)(void*)) java_start, thread);
 
+
+    // 这里有一点点解释: https://www.cnblogs.com/nufangrensheng/p/3522583.html
+    // [除此之外，pthread_attr_destroy还会用无效的值初始化属性对象]
+    // 有点类似于内存创建好把所有内容清零的做法
     pthread_attr_destroy(&attr);
 
+
+    // 线程创建失败相关指针会被销毁，先不做关注
     if (ret != 0) {
       if (PrintMiscellaneous && (Verbose || WizardMode)) {
         perror("pthread_create()");
@@ -946,8 +961,10 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
       return false;
     }
 
+
     // Store pthread info into the OSThread
     osthread->set_pthread_id(tid);
+
 
     // Wait until child thread is either initialized or aborted
     {
@@ -958,10 +975,13 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
       }
     }
 
+
+    // NPTL没有这个，不看
     if (lock) {
       os::Linux::createThread_lock()->unlock();
     }
   }
+
 
   // Aborted due to thread limit being reached
   if (state == ZOMBIE) {
@@ -969,6 +989,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
       delete osthread;
       return false;
   }
+
 
   // The thread is returned suspended (in state INITIALIZED),
   // and is started higher up in the call chain
