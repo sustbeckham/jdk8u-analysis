@@ -33,12 +33,14 @@ define_pd_global(bool, DontYieldALot,            false);
 define_pd_global(intx, ThreadStackSize,          1024); // 0 => use system default
 define_pd_global(intx, VMThreadStackSize,        1024);
 #else
+// ========== 不看这里 ==========
 // ThreadStackSize 320 allows a couple of test cases to run while
 // keeping the number of threads that can be created high.  System
 // default ThreadStackSize appears to be 512 which is too big.
 define_pd_global(intx, ThreadStackSize,          320);
 define_pd_global(intx, VMThreadStackSize,        512);
 #endif // AMD64
+
 
 define_pd_global(intx, CompilerThreadStackSize,  0);
 

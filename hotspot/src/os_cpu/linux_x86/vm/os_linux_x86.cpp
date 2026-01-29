@@ -608,21 +608,33 @@ bool os::is_allocatable(size_t bytes) {
 #endif // AMD64
 }
 
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // thread stack
 
+
+
+
 #ifdef AMD64
+
+// 线程栈最小允许大小
 size_t os::Linux::min_stack_allowed  = 64 * K;
 
 // amd64: pthread on amd64 is always in floating stack mode
 bool os::Linux::supports_variable_stack_size() {  return true; }
+
+
 #else
 size_t os::Linux::min_stack_allowed  =  (48 DEBUG_ONLY(+4))*K;
 
+// __GNUC__已经验证过有定义的，值为11
 #ifdef __GNUC__
 #define GET_GS() ({int gs; __asm__ volatile("movw %%gs, %w0":"=q"(gs)); gs&0xffff;})
 #endif
 
+// ========== 默认AMD64是定义的，所以下面这个实现可以不看 ==========
 // Test if pthread library can support variable thread stack size. LinuxThreads
 // in fixed stack mode allocates 2M fixed slot for each thread. LinuxThreads
 // in floating stack mode and NPTL support variable stack size.
@@ -630,7 +642,6 @@ bool os::Linux::supports_variable_stack_size() {
   if (os::Linux::is_NPTL()) {
      // NPTL, yes
      return true;
-
   } else {
     // Note: We can't control default stack size when creating a thread.
     // If we use non-default stack size (pthread_attr_setstacksize), both
@@ -661,16 +672,24 @@ bool os::Linux::supports_variable_stack_size() {
 }
 #endif // AMD64
 
+
+
+
+// 默认的栈大小为1M(编译线程为4M).
 // return default stack size for thr_type
 size_t os::Linux::default_stack_size(os::ThreadType thr_type) {
   // default stack size (compiler thread needs larger stack)
 #ifdef AMD64
+  // 这个分支
   size_t s = (thr_type == os::compiler_thread ? 4 * M : 1 * M);
 #else
   size_t s = (thr_type == os::compiler_thread ? 2 * M : 512 * K);
 #endif // AMD64
   return s;
 }
+
+
+
 
 size_t os::Linux::default_guard_size(os::ThreadType thr_type) {
   // Creating guard page is very expensive. Java thread has HotSpot

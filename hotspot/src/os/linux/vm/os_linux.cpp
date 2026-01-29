@@ -876,10 +876,13 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
+
+  // 计算栈大小，X86_64默认支持
   // stack size
   if (os::Linux::supports_variable_stack_size()) {
     // calculate stack size if it's not specified by caller
     if (stack_size == 0) {
+      // 默认的栈大小为1M(编译线程为4M).
       stack_size = os::Linux::default_stack_size(thr_type);
 
       switch (thr_type) {
@@ -899,19 +902,24 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
       case os::pgc_thread:
       case os::cgc_thread:
       case os::watcher_thread:
+        // VMThreadStackSize默认之为1024
         if (VMThreadStackSize > 0) stack_size = (size_t)(VMThreadStackSize * K);
         break;
       }
     }
 
+
+    // X86_64下，min_stack_allowed为64K。所以这里拿到的栈大小基本上还是1K
     stack_size = MAX2(stack_size, os::Linux::min_stack_allowed);
     pthread_attr_setstacksize(&attr, stack_size);
   } else {
     // let pthread_create() pick the default value.
   }
 
+
   // glibc guard page
   pthread_attr_setguardsize(&attr, os::Linux::default_guard_size(thr_type));
+
 
   ThreadState state;
 
