@@ -29,7 +29,7 @@
 
 
 
-// 通用的数组分配创建函数，比如以下场景:
+// 通用的数组分配创建函数(底层利用malloc分配堆外内存，同时考虑了伪共享)，比如以下场景:
 // ** 堆对应的数组HeapRegion*
 // Allocate a new array, generic version.
 address G1BiasedMappedArrayBase::create_new_base_array(size_t length, size_t elem_size) {

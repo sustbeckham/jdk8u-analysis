@@ -28,12 +28,18 @@
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
+
+
+
 OSThread::OSThread(OSThreadStartFunc start_proc, void* start_parm) {
   pd_initialize();
   set_start_proc(start_proc);
   set_start_parm(start_parm);
   set_interrupted(false);
 }
+
+
+
 
 OSThread::~OSThread() {
   pd_destroy();

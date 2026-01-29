@@ -164,9 +164,7 @@ G1SATBCardTableLoggingModRefBS(MemRegion whole_heap,
 
 
 
-// ** 系统启动时，初始化CardTableRS::CardTableRS
-// ** 初始化 _ct_bs = new G1SATBCardTableLoggingModRefBS 之后
-// ** 进一步调用 _ct_bs->initialize(); 到这里完成初始化工作
+// ** 系统启动时，G1CollectedHeap::initialize()处完成初始化工作
 void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   mapper->set_mapping_changed_listener(&_listener);
 
@@ -178,7 +176,6 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   // ** 所以这里实际的计算整个内存可以分成多少个512byte，比如4GB的内存，卡表的大小就是8388608。
   _guard_index = cards_required(_whole_heap.word_size()) - 1;
   _last_valid_index = _guard_index - 1;
-  tty->print_cr("[Fire-g1-heap] card_table_size=%d.", _guard_index);
 
 
   HeapWord* low_bound  = _whole_heap.start();
@@ -190,11 +187,12 @@ void G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper) {
   _covered[0] = _whole_heap;
 
 
+  // 卡表起始地址(这里的byte_map_base有点之前看的"biased"的味道。是用来加速访问的，后续通过byte_map_base可以直接地址访问下标对应元素)
   _byte_map = (jbyte*) mapper->reserved().start();
   byte_map_base = _byte_map - (uintptr_t(low_bound) >> card_shift);
 
-  tty->print_cr("[Fire-g1-heap] G1SATBCardTableLoggingModRefBS::initialize. low_bound:" INTPTR_FORMAT " high_bound:" INTPTR_FORMAT " reserved_start:" INTPTR_FORMAT " " , low_bound, high_bound, mapper->reserved().start());
 
+  // ============ 下面是断言和日志相关的不看 ============
   assert(byte_for(low_bound) == &_byte_map[0], "Checking start of map");
   assert(byte_for(high_bound-1) <= &_byte_map[_last_valid_index], "Checking end of map");
 

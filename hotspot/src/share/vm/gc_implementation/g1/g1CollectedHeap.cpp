@@ -2029,7 +2029,7 @@ jint G1CollectedHeap::initialize() {
 
   // heap_storage代表了整堆的内存映射
   // G1RegionToSpaceMapper内部持有G1PageBasedVirtualSpace，维护着指定的内存模型
-  // ??? 整堆的_listener没看到哪里初始化的...
+  // ??? _listener没看到哪里初始化的...
   G1RegionToSpaceMapper* heap_storage =
     G1RegionToSpaceMapper::create_mapper(g1_rs,
                                          g1_rs.size(),
@@ -2093,9 +2093,14 @@ jint G1CollectedHeap::initialize() {
   _hrm.initialize(heap_storage, prev_bitmap_storage, next_bitmap_storage, bot_storage, cardtable_storage, card_counts_storage);
 
 
+  // cardtable_storage卡表在上面已经定义。4G的堆内存情况下卡表大小为8388608=8M(内存映射比例为1/512), 如果是cx卡表的大小就是24M
+  // 实际调用G1SATBCardTableLoggingModRefBS::initialize(G1RegionToSpaceMapper* mapper)完成初始化
   g1_barrier_set()->initialize(cardtable_storage);
+
+
    // Do later initialization work for concurrent refinement.
   _cg1r->init(card_counts_storage);
+
 
   // 6843694 - ensure that the maximum region index can fit
   // in the remembered set structures.

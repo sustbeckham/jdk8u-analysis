@@ -80,12 +80,19 @@ T** Padded2DArray<T, flags, alignment>::create_unfreeable(uint rows, uint column
 
 
 
+// 底层利用malloc分配堆外内存，同时考虑了伪共享
 template <class T, MEMFLAGS flags, size_t alignment>
 T* PaddedPrimitiveArray<T, flags, alignment>::create_unfreeable(size_t length) {
   // Allocate a chunk of memory large enough to allow for some alignment.
   void* chunk = AllocateHeap(length * sizeof(T) + alignment, flags);
 
+
+  // 1. Linux确实有个memset函数，暂时没找到下面这种写法的实现，暂时默认这个函数直接走的是Linux的底层代码
+  // 2. memset()函数原型: void *memset(void *str, int c, size_t n)  它将指定的值c复制到str所指向的内存区域的前n个字节中，这可以用于将内存块清零或设置为特定值。
+  // 3. 所以这里其实就是把分配的内存内容清零。
   memset(chunk, 0, length * sizeof(T) + alignment);
 
+
+  // 确保避免伪共享
   return (T*)align_pointer_up(chunk, alignment);
 }

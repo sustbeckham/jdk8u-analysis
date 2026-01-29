@@ -35,6 +35,9 @@
 #define PADDING_SIZE(type, alignment)                           \
   ((alignment) + align_size_up_(sizeof(type), alignment))
 
+
+
+
 // Templates to create a subclass padded to avoid cache line sharing.  These are
 // effective only when applied to derived-most (leaf) classes.
 
@@ -44,6 +47,9 @@ class Padded : public T {
  private:
   char _pad_buf_[PADDING_SIZE(T, alignment)];
 };
+
+
+
 
 // When either 0 or 1 args may be passed to the base ctor.
 template <class T, typename Arg1T, size_t alignment = DEFAULT_CACHE_LINE_SIZE>
@@ -101,6 +107,12 @@ class Padded2DArray {
   static T** create_unfreeable(uint rows, uint columns, size_t* allocation_size = NULL);
 };
 
+
+
+
+// ** cache line的问题我们后续可以再分析，现在先记得这里的alignment是64就好。
+// ** MEMFLAGS实际上就是MemoryType
+//
 // Helper class to create an array of T objects. The array as a whole will
 // start at a multiple of alignment and its size will be aligned to alignment.
 template <class T, MEMFLAGS flags, size_t alignment = DEFAULT_CACHE_LINE_SIZE>

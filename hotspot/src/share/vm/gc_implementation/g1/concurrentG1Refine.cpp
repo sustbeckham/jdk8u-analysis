@@ -29,6 +29,9 @@
 #include "gc_implementation/g1/g1HotCardCache.hpp"
 #include "runtime/java.hpp"
 
+
+
+
 ConcurrentG1Refine::ConcurrentG1Refine(G1CollectedHeap* g1h, CardTableEntryClosure* refine_closure) :
   _threads(NULL), _n_threads(0),
   _hot_card_cache(g1h)
@@ -55,16 +58,29 @@ ConcurrentG1Refine::ConcurrentG1Refine(G1CollectedHeap* g1h, CardTableEntryClosu
   set_red_zone(MAX2<int>(G1ConcRefinementRedZone, yellow_zone()));
 
 
+  // 默认是0，但虚拟机会自适应(暂时认为8核下线程是8)，函数具体实现在当前类
   _n_worker_threads = thread_num();
+
+
+  // 需要一个额外的线程去年轻代做rset的采样(那就暂时认为8核下线程是9)
   // We need one extra thread to do the young gen rset size sampling.
   _n_threads = _n_worker_threads + 1;
 
+
+  // ?
   reset_threshold_step();
 
+
+  // NEW_C_HEAP_ARRAY是使用malloc直接分配内存的宏(也就是说这块内存不在堆上，算是堆外内存了)
+  // 给9个RefineThread*申请内存(那就暂时认为8核下线程是9)
   _threads = NEW_C_HEAP_ARRAY(ConcurrentG1RefineThread*, _n_threads, mtGC);
 
+
+  // 线程ID初始化。这里实际拿的是当前的线程数。
   uint worker_id_offset = DirtyCardQueueSet::num_par_ids();
 
+
+  // 上面线程的内存已经申请好，这里具体初始化这些线程。详见concurrentG1RefineThread.cpp
   ConcurrentG1RefineThread *next = NULL;
   for (uint i = _n_threads - 1; i != UINT_MAX; i--) {
     ConcurrentG1RefineThread* t = new ConcurrentG1RefineThread(this, next, refine_closure, worker_id_offset, i);
@@ -84,11 +100,17 @@ ConcurrentG1Refine::ConcurrentG1Refine(G1CollectedHeap* g1h, CardTableEntryClosu
 
 void ConcurrentG1Refine::reset_threshold_step() {
   if (FLAG_IS_DEFAULT(G1ConcRefinementThresholdStep)) {
+    // 没有几个研发知道G1ConcRefinementThresholdStep的，所以这里不会去设置，默认走这个分支
+    // 8核下=(24-8)/9=1，所以这个阈值是1
+    // 暂时不明白这个阈值的具体含义(源码也没注释)，后面再看...
     _thread_threshold_step = (yellow_zone() - green_zone()) / (worker_thread_num() + 1);
   } else {
     _thread_threshold_step = G1ConcRefinementThresholdStep;
   }
 }
+
+
+
 
 void ConcurrentG1Refine::init(G1RegionToSpaceMapper* card_counts_storage) {
   _hot_card_cache.initialize(card_counts_storage);
@@ -136,9 +158,16 @@ void ConcurrentG1Refine::worker_threads_do(ThreadClosure * tc) {
   }
 }
 
+
+
+
+// 默认是0，但虚拟机会自适应(暂时认为8核线程下是8)
 uint ConcurrentG1Refine::thread_num() {
   return G1ConcRefinementThreads;
 }
+
+
+
 
 void ConcurrentG1Refine::print_worker_threads_on(outputStream* st) const {
   for (uint i = 0; i < _n_threads; ++i) {

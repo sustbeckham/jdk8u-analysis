@@ -643,7 +643,7 @@ void* Universe::non_oop_word() {
 jint universe_init() {
   tty->print_cr("[Fire] start init.");
   tty->print_cr("[Fire-Constant] 1U=%d.", 1U);
-  tty->print_cr("[Fire-Constant] _LP64=%d.", _LP64);
+  tty->print_cr("[Fire-Constant] __GNUC__=%d, AMD64=%d, _LP64=%d.", __GNUC__, AMD64, _LP64);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);

@@ -31,6 +31,9 @@
 #include "runtime/handles.inline.hpp"
 #include "runtime/mutexLocker.hpp"
 
+
+
+
 ConcurrentG1RefineThread::
 ConcurrentG1RefineThread(ConcurrentG1Refine* cg1r, ConcurrentG1RefineThread *next,
                          CardTableEntryClosure* refine_closure,
@@ -45,7 +48,7 @@ ConcurrentG1RefineThread(ConcurrentG1Refine* cg1r, ConcurrentG1RefineThread *nex
   _cg1r(cg1r),
   _vtime_accum(0.0)
 {
-
+  // ========== 锁相关的先不看，优先看整体的GC串联 ==========
   // Each thread has its own monitor. The i-th thread is responsible for signalling
   // to thread i+1 if the number of buffers in the queue exceeds a threashold for this
   // thread. Monitors are also used to wake up the threads during termination.
@@ -56,9 +59,14 @@ ConcurrentG1RefineThread(ConcurrentG1Refine* cg1r, ConcurrentG1RefineThread *nex
   } else {
     _monitor = DirtyCardQ_CBL_mon;
   }
+
+
   initialize();
   create_and_start();
 }
+
+
+
 
 void ConcurrentG1RefineThread::initialize() {
   if (_worker_id < cg1r()->worker_thread_num()) {

@@ -55,6 +55,7 @@ void HeapRegionManager::initialize(G1RegionToSpaceMapper* heap_storage,  // 堆�
 
 
   // _regions的结构是G1HeapRegionTable(其实就是G1BiasedMappedArray这个模型套了一层皮)
+  // 这里的初始化起始就是内部维护了一个HeapRegion*的数组，后边参与Region的管理
   _regions.initialize(reserved.start(), reserved.end(), HeapRegion::GrainBytes);
 
 

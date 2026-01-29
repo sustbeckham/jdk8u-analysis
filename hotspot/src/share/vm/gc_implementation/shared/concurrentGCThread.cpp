@@ -36,21 +36,33 @@
 
 int  ConcurrentGCThread::_CGC_flag            = CGC_nil;
 
+
+
+
 ConcurrentGCThread::ConcurrentGCThread() :
   _should_terminate(false), _has_terminated(false) {
 };
 
+
+
+
 void ConcurrentGCThread::create_and_start() {
+  // 这里的cgc_thread是个ThreadType类型的枚举，意思是并发GC处理的相关线程
   if (os::create_thread(this, os::cgc_thread)) {
     // XXX: need to set this to low priority
     // unless "agressive mode" set; priority
     // should be just less than that of VMThread.
     os::set_priority(this, NearMaxPriority);
     if (!_should_terminate && !DisableStartThread) {
+      // if准入条件忽略，尤其DisableStartThread类似这种是hotspot研发用来测试的
+      //
       os::start_thread(this);
     }
   }
 }
+
+
+
 
 void ConcurrentGCThread::initialize_in_thread() {
   this->record_stack_base_and_size();

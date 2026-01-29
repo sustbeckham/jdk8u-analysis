@@ -38,6 +38,9 @@ class G1RegionToSpaceMapper;
 class G1RemSet;
 class DirtyCardQueue;
 
+
+
+
 class ConcurrentG1Refine: public CHeapObj<mtGC> {
   ConcurrentG1RefineThread** _threads;
   uint _n_threads;

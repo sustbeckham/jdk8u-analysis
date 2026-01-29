@@ -654,8 +654,12 @@ class ResourceObj ALLOCATION_SUPER_CLASS_SPEC {
 #define NEW_C_HEAP_ARRAY2(type, size, memflags, pc)\
   (type*) (AllocateHeap((size) * sizeof(type), memflags, pc))
 
+
+
 #define NEW_C_HEAP_ARRAY(type, size, memflags)\
   (type*) (AllocateHeap((size) * sizeof(type), memflags))
+
+
 
 #define NEW_C_HEAP_ARRAY2_RETURN_NULL(type, size, memflags, pc)\
   NEW_C_HEAP_ARRAY3(type, (size), memflags, pc, AllocFailStrategy::RETURN_NULL)

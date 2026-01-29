@@ -53,6 +53,9 @@ enum ThreadState {
   ZOMBIE                        // All done, but not reclaimed yet
 };
 
+
+
+
 // I'd make OSThread a ValueObj embedded in Thread to avoid an indirection, but
 // the assembler test in java.cpp expects that it can install the OSThread of
 // the main thread into its own Thread at will.
@@ -126,6 +129,8 @@ class OSThread: public CHeapObj<mtThread> {
   // to access /proc.
   thread_id_t _thread_id;
 };
+
+
 
 
 // Utility class for use with condition variables:

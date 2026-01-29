@@ -28,6 +28,9 @@
 
 #include <signal.h>
 
+
+
+
 void OSThread::pd_initialize() {
   assert(this != NULL, "check");
   _thread_id        = 0;
@@ -42,6 +45,9 @@ void OSThread::pd_initialize() {
   _startThread_lock = new Monitor(Mutex::event, "startThread_lock", true);
   assert(_startThread_lock !=NULL, "check");
 }
+
+
+
 
 void OSThread::pd_destroy() {
   delete _startThread_lock;

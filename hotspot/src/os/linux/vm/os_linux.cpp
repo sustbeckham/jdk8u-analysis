@@ -847,6 +847,9 @@ static void *java_start(Thread *thread) {
   return 0;
 }
 
+
+
+
 bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
   assert(thread->osthread() == NULL, "caller responsible");
 
@@ -856,13 +859,17 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
     return false;
   }
 
+
   // set the correct thread state
   osthread->set_thread_type(thr_type);
+
 
   // Initial state is ALLOCATED but not INITIALIZED
   osthread->set_state(ALLOCATED);
 
+
   thread->set_osthread(osthread);
+
 
   // init thread attributes
   pthread_attr_t attr;
@@ -960,6 +967,9 @@ bool os::create_thread(Thread* thread, ThreadType thr_type, size_t stack_size) {
   assert(state == INITIALIZED, "race condition");
   return true;
 }
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // attach existing thread

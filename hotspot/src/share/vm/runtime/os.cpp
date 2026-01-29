@@ -589,6 +589,15 @@ void* os::malloc(size_t size, MEMFLAGS flags) {
   return os::malloc(size, flags, CALLER_PC);
 }
 
+
+
+
+// 尝试也询问了DeepSeek, Java的内存管理可以分为以下部分
+// 1. Heap，通过mmap映射出所需大小
+// 2. glibc直接malloc出的内存区域，比如这里的HeapRegion*数组
+// 3. Metaspace，直接mmap出额外的内存
+// 4. 其他(比如卡表)
+// 需要说明的是heap和其他内存区域隔离
 void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
   NOT_PRODUCT(inc_stat_counter(&num_mallocs, 1));
   NOT_PRODUCT(inc_stat_counter(&alloc_bytes, size));
@@ -630,13 +639,20 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
 
   NOT_PRODUCT(if (MallocVerifyInterval > 0) check_heap());
 
+  // 上面都是调试和NMT之类的可以先不看
+
+
   u_char* ptr;
   if (MallocMaxTestWords > 0) {
     ptr = testMalloc(alloc_size);
   } else {
+    // [这个方法就只看这一行就可以了]
+    // 这里进入操作系统层面的malloc函数(MallocMaxTestWords默认是0不用管他)
     ptr = (u_char*)::malloc(alloc_size);
   }
 
+
+  // 下面的都是断言、断点、MemTracker之类的可以先不用看
 #ifdef ASSERT
   if (ptr == NULL) {
     return NULL;
@@ -645,6 +661,7 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
   GuardedMemory guarded(ptr, size + nmt_header_size);
   ptr = guarded.get_user_ptr();
 #endif
+
   if ((intptr_t)ptr == (intptr_t)MallocCatchPtr) {
     tty->print_cr("os::malloc caught, " SIZE_FORMAT " bytes --> " PTR_FORMAT, size, ptr);
     breakpoint();
@@ -657,6 +674,9 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
   // we do not track guard memory
   return MemTracker::record_malloc((address)ptr, size, memflags, stack, level);
 }
+
+
+
 
 void* os::realloc(void *memblock, size_t size, MEMFLAGS flags) {
   return os::realloc(memblock, size, flags, CALLER_PC);

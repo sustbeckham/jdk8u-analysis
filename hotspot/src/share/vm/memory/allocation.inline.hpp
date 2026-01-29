@@ -34,6 +34,10 @@
 void trace_heap_malloc(size_t size, const char* name, void *p);
 void trace_heap_free(void *p);
 
+
+
+
+// 非生产实际使用代码不看
 #ifndef PRODUCT
 // Increments unsigned long value for statistics (not atomic on MP).
 inline void inc_stat_counter(volatile julong* dest, julong add_value) {
@@ -49,11 +53,19 @@ inline void inc_stat_counter(volatile julong* dest, julong add_value) {
 }
 #endif
 
+
+
+
 // allocate using malloc; will fail if no memory available
 inline char* AllocateHeap(size_t size, MEMFLAGS flags,
     const NativeCallStack& stack,
     AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM) {
+
+
+  // 只关心这一段即可，代码深入到os.cpp(内部也是直接调用操作系统的malloc函数)
   char* p = (char*) os::malloc(size, flags, stack);
+
+
   #ifdef ASSERT
   if (PrintMallocFree) trace_heap_malloc(size, "AllocateHeap", p);
   #endif
@@ -63,6 +75,9 @@ inline char* AllocateHeap(size_t size, MEMFLAGS flags,
   return p;
 }
 
+
+
+
 #ifdef __GNUC__
 __attribute__((always_inline))
 #endif
@@ -70,6 +85,9 @@ inline char* AllocateHeap(size_t size, MEMFLAGS flags,
     AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM) {
   return AllocateHeap(size, flags, CURRENT_PC, alloc_failmode);
 }
+
+
+
 
 #ifdef __GNUC__
 __attribute__((always_inline))
