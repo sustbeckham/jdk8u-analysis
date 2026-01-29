@@ -277,6 +277,7 @@ bool os::have_special_privileges() {
       #define SYS_gettid 224
     #else
       #ifdef __amd64__
+        // 获取线程ID走的是这个分支
         #define SYS_gettid 186
       #else
         #ifdef __sparc__
@@ -298,6 +299,7 @@ static char cpu_arch[] = HOTSPOT_LIB_ARCH;
 
 
 
+// 在x86_64下使用syscall(186)来获取线程id
 // pid_t gettid()
 //
 // Returns the kernel thread id of the currently running thread. Kernel
@@ -307,6 +309,8 @@ static char cpu_arch[] = HOTSPOT_LIB_ARCH;
 // on NPTL, it returns the same pid for all threads, as required by POSIX.)
 //
 pid_t os::Linux::gettid() {
+  // 在x86_64下这里SYS_gettid被定义为186，编号186为获取线程id。
+  // ** #define __NR_gettid 186
   int rslt = syscall(SYS_gettid);
   if (rslt == -1) {
      // old kernel, no NPTL support
@@ -546,12 +550,19 @@ void os::Linux::signal_sets_init() {
 
 }
 
+
+
+
+// 这里的意思是说要设置一些不用block的信号，因为部分信号默认是要block的
 // These are signals that are unblocked while a thread is running Java.
 // (For some reason, they get blocked by default.)
 sigset_t* os::Linux::unblocked_signals() {
   assert(signal_sets_initialized, "Not initialized");
   return &unblocked_sigs;
 }
+
+
+
 
 // These are the signals that are blocked while a (non-VM) thread is
 // running Java. Only the VM thread handles these signals.
@@ -566,14 +577,25 @@ sigset_t* os::Linux::allowdebug_blocked_signals() {
   return &allowdebug_blocked_sigs;
 }
 
+
+
+
 void os::Linux::hotspot_sigmask(Thread* thread) {
 
-  //Save caller's signal mask before setting VM signal mask
+  // pthread_sigmask 用来定义线程的信号掩码, 函数定义为
+  // int pthread_sigmask (int how, const sigset_t *newmask, sigset_t *oldmask);
+  // 下面函数的含义是(DeepSeek):
+  // 获取当前线程的信号阻塞状态，将其保存到caller_sigmask变量中，为后续的信号处理操作（如临时修改掩码后恢复原始状态）提供基础
+  //
+  // Save caller's signal mask before setting VM signal mask
   sigset_t caller_sigmask;
   pthread_sigmask(SIG_BLOCK, NULL, &caller_sigmask);
 
+
+  // 保存上文拿到的caller_sigmask
   OSThread* osthread = thread->osthread();
   osthread->set_caller_sigmask(caller_sigmask);
+
 
   pthread_sigmask(SIG_UNBLOCK, os::Linux::unblocked_signals(), NULL);
 
@@ -587,6 +609,9 @@ void os::Linux::hotspot_sigmask(Thread* thread) {
     }
   }
 }
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // detecting pthread library
@@ -836,6 +861,7 @@ static void *java_start(Thread *thread) {
   }
 
 
+  // 在x86_64下使用syscall(186)来获取线程id
   // thread_id is kernel thread id (similar to Solaris LWP id)
   osthread->set_thread_id(os::Linux::gettid());
 

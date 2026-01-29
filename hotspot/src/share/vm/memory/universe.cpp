@@ -646,7 +646,7 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] OS. AMD64=%d, _LP64=%d, __amd64__=%d.", AMD64, _LP64, __amd64__);
   tty->print_cr("[Fire-Constant] LIB. __GNUC__=%d.", __GNUC__);
   tty->print_cr("[Fire-Constant] CPU. UseNUMA=%d.", UseNUMA);
-  tty->print_cr("[Fire-Constant] Thread. LinuxThreads=%d, NPTL=%d.", os::Linux::is_LinuxThreads(), os::Linux::is_NPTL());
+  tty->print_cr("[Fire-Constant] Thread. LinuxThreads=%d, NPTL=%d, ReduceSignalUsage=%d.", os::Linux::is_LinuxThreads(), os::Linux::is_NPTL(), ReduceSignalUsage);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
