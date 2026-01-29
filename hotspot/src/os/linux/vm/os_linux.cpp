@@ -490,6 +490,9 @@ extern "C" void breakpoint() {
 debug_only(static bool signal_sets_initialized = false);
 static sigset_t unblocked_sigs, vm_sigs, allowdebug_blocked_sigs;
 
+
+
+
 bool os::Linux::is_sig_ignored(int sig) {
       struct sigaction oact;
       sigaction(sig, (struct sigaction*)NULL, &oact);
@@ -501,6 +504,10 @@ bool os::Linux::is_sig_ignored(int sig) {
            return false;
 }
 
+
+
+
+// 主要用来初始化那些信号量我们可以忽略(有些信号量的默认行为是线程阻塞)
 void os::Linux::signal_sets_init() {
   // Should also have an assertion stating we are still single-threaded.
   assert(!signal_sets_initialized, "Already initialized");
@@ -517,17 +524,35 @@ void os::Linux::signal_sets_init() {
   // (See bug 4345157, and other related bugs).
   // In reality, though, unblocking these signals is really a nop, since
   // these signals are not blocked by default.
+
+
+  // 初始化unblocked_sigs为空集合，后续会添加一些必须不被阻塞的信号。
   sigemptyset(&unblocked_sigs);
+
+
+  // (可以不做重点关注)初始化allowdebug_blocked_sigs为空集合，这个信号集的名字暗示它用于允许调试时阻塞的信号。
   sigemptyset(&allowdebug_blocked_sigs);
+
+
+  // 以下四个不阻塞。特别是这个SIGSEGV真的在虚拟机中用的太广泛了。
   sigaddset(&unblocked_sigs, SIGILL);
   sigaddset(&unblocked_sigs, SIGSEGV);
   sigaddset(&unblocked_sigs, SIGBUS);
   sigaddset(&unblocked_sigs, SIGFPE);
+
+
+  // 不是PPC64，忽略该分支
 #if defined(PPC64)
   sigaddset(&unblocked_sigs, SIGTRAP);
 #endif
+
+
+  // (可以不做重点关注)上文中有定义过SR_signum = SIGUSR2，这里可暂时忽略，感觉是为了自定义来的?
   sigaddset(&unblocked_sigs, SR_signum);
 
+
+  // 默认情况下ReduceSignalUsage为false，所以这个分支能走进去
+  // 默认会添加SHUTDOWN1_SIGNAL、SHUTDOWN2_SIGNAL、SHUTDOWN3_SIGNAL。DeepSeek说这些是为了支持ShutdownHooks(优雅关闭).
   if (!ReduceSignalUsage) {
    if (!os::Linux::is_sig_ignored(SHUTDOWN1_SIGNAL)) {
       sigaddset(&unblocked_sigs, SHUTDOWN1_SIGNAL);
@@ -542,18 +567,27 @@ void os::Linux::signal_sets_init() {
       sigaddset(&allowdebug_blocked_sigs, SHUTDOWN3_SIGNAL);
    }
   }
+
+
+  // 初始化vm_sigs为空集合，专属于VM线程。
   // Fill in signals that are blocked by all but the VM thread.
   sigemptyset(&vm_sigs);
+
+
+  // 这里也能走进去
+  // DeepSeek说BREAK_SIGNAL是用于线程转储的(jstack&jmap么?...)
+  // 只有VM线程可以接收这个信号，其他线程都阻塞它(其他线程阻塞，VM现场开始保存快照? 这么理解也感觉挺好理解的)
   if (!ReduceSignalUsage)
     sigaddset(&vm_sigs, BREAK_SIGNAL);
-  debug_only(signal_sets_initialized = true);
 
+
+  debug_only(signal_sets_initialized = true);
 }
 
 
 
 
-// 这里的意思是说要设置一些不用block的信号，因为部分信号默认是要block的
+// 这里的意思是说要设置一些不用block的信号(在虚拟机创建的时候会设置，逻辑见当前类的signal_sets_init()函数)，因为部分信号默认是要block的
 // These are signals that are unblocked while a thread is running Java.
 // (For some reason, they get blocked by default.)
 sigset_t* os::Linux::unblocked_signals() {
@@ -580,6 +614,7 @@ sigset_t* os::Linux::allowdebug_blocked_signals() {
 
 
 
+// 明确线程需要忽略那些信号量。因为部分信号Linux下默认是要block的，如果按照这个默认语义Java就没法运行了
 void os::Linux::hotspot_sigmask(Thread* thread) {
 
   // pthread_sigmask 用来定义线程的信号掩码, 函数定义为
@@ -597,8 +632,12 @@ void os::Linux::hotspot_sigmask(Thread* thread) {
   osthread->set_caller_sigmask(caller_sigmask);
 
 
+  // 让线程不要阻塞unblocked_signals里的信号量(在虚拟机创建的时候会设置，逻辑见当前类的signal_sets_init()函数)，因为部分信号默认是要block的
   pthread_sigmask(SIG_UNBLOCK, os::Linux::unblocked_signals(), NULL);
 
+
+  // vm_signals()刚才在signal_sets_init()里面也设置过了，当前只有BREAK_SIGNAL
+  // 这里的意思是，仅当VM线程可以遇到BREAK_SIGNAL不阻塞，其他线程还是得阻塞的
   if (!ReduceSignalUsage) {
     if (thread->is_VM_thread()) {
       // Only the VM thread handles BREAK_SIGNAL ...
@@ -844,7 +883,9 @@ static void *java_start(Thread *thread) {
   int pid = os::current_process_id();
   alloca(((pid ^ counter++) & 7) * 128);
 
+
   ThreadLocalStorage::set_thread(thread);
+
 
   OSThread* osthread = thread->osthread();
   Monitor* sync = osthread->startThread_lock();
@@ -875,12 +916,17 @@ static void *java_start(Thread *thread) {
   }
 
 
+  // 明确线程需要忽略那些信号量。因为部分信号Linux下默认是要block的，如果按照这个默认语义Java就没法运行了
   // initialize signal mask for this thread
   os::Linux::hotspot_sigmask(thread);
 
+
+  // X86_64下等于什么都不做，内部实现为空
   // initialize floating point control register
   os::Linux::init_thread_fpu_state();
 
+
+  // 唤醒外层，线程已经准备好
   // handshaking with parent thread
   {
     MutexLockerEx ml(sync, Mutex::_no_safepoint_check_flag);
@@ -895,6 +941,8 @@ static void *java_start(Thread *thread) {
     }
   }
 
+
+  // 这里会回到实际创建线程的run函数，不同的线程类型run函数的实现方式有较大差异
   // call one more level start routine
   thread->run();
 
@@ -1111,12 +1159,17 @@ bool os::create_attached_thread(JavaThread* thread) {
     osthread->clear_expanding_stack();
   }
 
+
+  // 明确线程需要忽略那些信号量。因为部分信号Linux下默认是要block的，如果按照这个默认语义Java就没法运行了
   // initialize signal mask for this thread
   // and save the caller's signal mask
   os::Linux::hotspot_sigmask(thread);
 
   return true;
 }
+
+
+
 
 void os::pd_start_thread(Thread* thread) {
   OSThread * osthread = thread->osthread();
@@ -5193,6 +5246,9 @@ void os::pd_init_container_support() {
   OSContainer::init();
 }
 
+
+
+
 // this is called _after_ the global arguments have been parsed
 jint os::init_2(void)
 {
@@ -5226,7 +5282,11 @@ jint os::init_2(void)
     return JNI_ERR;
   }
 
+
+  // 主要用来初始化那些信号量我们可以忽略(有些信号量的默认行为是线程阻塞)
   Linux::signal_sets_init();
+
+
   Linux::install_signal_handlers();
 
   // Check minimum allowable stack size for thread creation and to initialize

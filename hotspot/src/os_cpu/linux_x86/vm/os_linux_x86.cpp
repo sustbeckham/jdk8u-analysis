@@ -543,12 +543,19 @@ JVM_handle_linux_signal(int sig,
   ShouldNotReachHere();
 }
 
+
+
+
+// X86_64下等于什么都不做
 void os::Linux::init_thread_fpu_state(void) {
 #ifndef AMD64
   // set fpu to 53 bit precision
   set_fpu_control_word(0x27f);
 #endif // !AMD64
 }
+
+
+
 
 int os::Linux::get_fpu_control_word(void) {
 #ifdef AMD64

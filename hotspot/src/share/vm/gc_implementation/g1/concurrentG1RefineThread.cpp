@@ -176,6 +176,7 @@ void ConcurrentG1RefineThread::deactivate() {
 
 
 
+// 上面线程初始化后，调用os::create_thread完成操作系统层面的线程创建后会回到这里
 void ConcurrentG1RefineThread::run() {
   initialize_in_thread();
   wait_for_universe_init();
