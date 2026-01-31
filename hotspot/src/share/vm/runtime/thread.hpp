@@ -677,6 +677,9 @@ inline Thread* Thread::current() {
   return thread;
 }
 
+
+
+
 // Name support for threads.  non-JavaThread subclasses with multiple
 // uniquely named instances should derive from this.
 class NamedThread: public Thread {
@@ -699,6 +702,9 @@ class NamedThread: public Thread {
   JavaThread *processed_thread() { return _processed_thread; }
   void set_processed_thread(JavaThread *thread) { _processed_thread = thread; }
 };
+
+
+
 
 // Worker threads are named and have an id of an assigned work.
 class WorkerThread: public NamedThread {

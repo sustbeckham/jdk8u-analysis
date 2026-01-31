@@ -704,6 +704,9 @@ size_t os::Linux::default_guard_size(os::ThreadType thr_type) {
   return (thr_type == java_thread ? 0 : page_size());
 }
 
+
+
+
 // Java thread:
 //
 //   Low memory addresses
@@ -764,9 +767,14 @@ static void current_stack_region(address * bottom, size_t * size) {
      pthread_attr_destroy(&attr);
 
   }
+
+
   assert(os::current_stack_pointer() >= *bottom &&
          os::current_stack_pointer() < *bottom + *size, "just checking");
 }
+
+
+
 
 address os::current_stack_base() {
   address bottom;
@@ -774,6 +782,9 @@ address os::current_stack_base() {
   current_stack_region(&bottom, &size);
   return (bottom + size);
 }
+
+
+
 
 size_t os::current_stack_size() {
   // stack size includes normal stack and HotSpot guard pages

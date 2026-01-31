@@ -72,6 +72,9 @@ void ConcurrentGCThread::initialize_in_thread() {
   assert(this == Thread::current(), "just checking");
 }
 
+
+
+
 void ConcurrentGCThread::wait_for_universe_init() {
   MutexLockerEx x(CGC_lock, Mutex::_no_safepoint_check_flag);
   while (!is_init_completed() && !_should_terminate) {

@@ -316,12 +316,18 @@ void Thread::initialize_thread_local_storage() {
   ThreadLocalStorage::set_thread(this);
 }
 
+
+
+
 void Thread::record_stack_base_and_size() {
   set_stack_base(os::current_stack_base());
   set_stack_size(os::current_stack_size());
   if (is_Java_thread()) {
     ((JavaThread*) this)->set_stack_overflow_limit();
   }
+
+
+  // 只有Solaris系统实现了这个方法，可以先不看
   // CR 7190089: on Solaris, primordial thread's stack is adjusted
   // in initialize_thread(). Without the adjustment, stack size is
   // incorrect if stack is set to unlimited (ulimit -s unlimited).
@@ -330,12 +336,16 @@ void Thread::record_stack_base_and_size() {
   // set up any platform-specific state.
   os::initialize_thread(this);
 
+
+  // 内存跟踪相关的可以先不看
 #if INCLUDE_NMT
   // record thread's native stack, stack grows downward
   address stack_low_addr = stack_base() - stack_size();
   MemTracker::record_thread_stack(stack_low_addr, stack_size());
 #endif // INCLUDE_NMT
 }
+
+
 
 
 Thread::~Thread() {

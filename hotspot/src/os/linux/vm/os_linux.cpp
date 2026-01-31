@@ -68,6 +68,7 @@
 #include "utilities/elfFile.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/vmError.hpp"
+#include "utilities/ostream.hpp"
 
 // put OS-includes here
 # include <sys/types.h>
@@ -1232,6 +1233,12 @@ extern "C" Thread* get_thread() {
 //////////////////////////////////////////////////////////////////////////////
 // primordial thread
 
+
+
+
+// DeepSeek说并没有官方的术语叫primordial thread。不过很多地方它的意思是[原始线程，初始线程]。
+// 豆包也指出，primordial thread是指JVM启动的第一个线程
+//
 // Check if current thread is the primordial thread, similar to Solaris thr_main.
 bool os::is_primordial_thread(void) {
   char dummy;
@@ -1250,20 +1257,51 @@ bool os::is_primordial_thread(void) {
   }
 }
 
+
+
+
+// 基于操作系统的/proc/self/maps找出满足给定虚拟内存地址addr的上界(vma_high)、下界(vma_low)
 // Find the virtual memory area that contains addr
 static bool find_vma(address addr, address* vma_low, address* vma_high) {
+  // 读取/proc/self/maps文件内容
+  // 以本机为例(MacM2内启动的docker容器，X86_64架构)，/proc/self/maps输出的内容是这样的:
+  // root@ffaaf21a9524:/jdk8u/jdk8u-analysis# cat /proc/self/maps
+  // 555555556000-555555558000 r--p 00000000 00:42 342                        /usr/bin/cat
+  // 555555558000-55555555c000 r-xp 00002000 00:42 342                        /usr/bin/cat
+  // 55555555c000-55555555e000 r--p 00006000 00:42 342                        /usr/bin/cat
+  // 55555555e000-55555555f000 r--p 00007000 00:42 342                        /usr/bin/cat
+  // 55555555f000-555555560000 rw-p 00008000 00:42 342                        /usr/bin/cat
+  // 555555560000-555555581000 rw-p 00000000 00:00 0                          [heap]
+  // ffffa9faa000-ffffa9fad000 rw-p 00000000 00:00 0
+  // ffffa9fb5000-ffffa9fdd000 r--p 00000000 00:42 69838                      /usr/lib/x86_64-linux-gnu/libc.so.6
+  // ffffa9fdd000-ffffaa172000 r-xp 00028000 00:42 69838                      /usr/lib/x86_64-linux-gnu/libc.so.6
+  // ffffaa172000-ffffaa1ca000 r--p 001bd000 00:42 69838                      /usr/lib/x86_64-linux-gnu/libc.so.6
+  // ffffaa1ca000-ffffaa1cb000 ---p 00215000 00:42 69838                      /usr/lib/x86_64-linux-gnu/libc.so.6
+  // ffffaa1cb000-ffffaa1cf000 r--p 00215000 00:42 69838                      /usr/lib/x86_64-linux-gnu/libc.so.6
+  // ffffaa1cf000-ffffaa1d1000 rw-p 00219000 00:42 69838                      /usr/lib/x86_64-linux-gnu/libc.so.6
   FILE *fp = fopen("/proc/self/maps", "r");
   if (fp) {
     address low, high;
+
+    // 如果没有读取到文件末尾就特么继续读
     while (!feof(fp)) {
+
+      // 读取这种模式["%p-%p"]的文本内容
       if (fscanf(fp, "%p-%p", &low, &high) == 2) {
+
+        // 如果给定的地址刚好在这段内存地址中间
         if (low <= addr && addr < high) {
+
+           // 那就把这段地址的虚拟内存上下界记录下来
            if (vma_low)  *vma_low  = low;
            if (vma_high) *vma_high = high;
            fclose (fp);
            return true;
         }
       }
+
+      // 如果当前行没有["%p-%p"]这种模式的文本内容，逐个读取字符直到遇到行结束标记
+      // (他娘的感觉多此一举啊...这段代码删了也不影响整体判断)
       for (;;) {
         int ch = fgetc(fp);
         if (ch == EOF || ch == (int)'\n') break;
@@ -1274,6 +1312,10 @@ static bool find_vma(address addr, address* vma_low, address* vma_high) {
   return false;
 }
 
+
+
+
+// "捕获"原始线程(primordial thread)的信息
 // Locate primordial thread stack. This special handling of primordial thread stack
 // is needed because pthread_getattr_np() on most (all?) Linux distros returns
 // bogus value for the primordial process thread. While the launcher has created
@@ -1326,8 +1368,10 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   // try __libc_stack_end first
   uintptr_t *p = (uintptr_t *)dlsym(RTLD_DEFAULT, "__libc_stack_end");
   if (p && *p) {
+    tty->print_cr("[Fire-TEMP] FIRST.");
     stack_start = *p;
   } else {
+    tty->print_cr("[Fire-TEMP] SECOND.");
     // see if we can get the start_stack field from /proc/self/stat
     FILE *fp;
     int pid;
@@ -1445,6 +1489,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
 
   uintptr_t stack_top;
   address low, high;
+  // 基于操作系统的/proc/self/maps找出满足给定虚拟内存地址addr的上界(vma_high)、下界(vma_low)
   if (find_vma((address)stack_start, &low, &high)) {
     // success, "high" is the true stack top. (ignore "low", because initial
     // thread stack grows on demand, its real bottom is high - RLIMIT_STACK.)
@@ -1458,6 +1503,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
     stack_top = stack_start;
     stack_size -= 16 * page_size();
   }
+
 
   // stack_top could be partially down the page so align it
   stack_top = align_size_up(stack_top, page_size());
@@ -1475,6 +1521,9 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   _initial_thread_stack_bottom = (address)stack_top - _initial_thread_stack_size;
   assert(_initial_thread_stack_bottom < (address)stack_top, "overflow!");
 }
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // time support
@@ -5249,6 +5298,7 @@ void os::pd_init_container_support() {
 
 
 
+// 注意这里的注释: 全局参数被解析后才会调用到这里
 // this is called _after_ the global arguments have been parsed
 jint os::init_2(void)
 {
@@ -5260,10 +5310,13 @@ jint os::init_2(void)
 
   os::set_polling_page( polling_page );
 
+
+  // 不看这里
 #ifndef PRODUCT
   if(Verbose && PrintMiscellaneous)
     tty->print("[SafePoint Polling address: " INTPTR_FORMAT "]\n", (intptr_t)polling_page);
 #endif
+
 
   if (!UseMembar) {
     address mem_serialize_page = (address) ::mmap(NULL, Linux::page_size(), PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
@@ -5312,11 +5365,15 @@ jint os::init_2(void)
   JavaThread::set_stack_size_at_create(round_to(threadStackSizeInBytes,
         vm_page_size()));
 
+
   Linux::capture_initial_stack(JavaThread::stack_size_at_create());
 
+
+  // 不看IA32架构
 #if defined(IA32)
   workaround_expand_exec_shield_cs_limit();
 #endif
+
 
   Linux::libpthread_init();
   if (PrintMiscellaneous && (Verbose || WizardMode)) {
@@ -5325,6 +5382,8 @@ jint os::init_2(void)
           Linux::is_floating_stack() ? "floating stack" : "fixed stack");
   }
 
+
+  // 默认不开启UseNUMA，不看这里
   if (UseNUMA) {
     if (!Linux::libnuma_init()) {
       UseNUMA = false;
@@ -5357,6 +5416,7 @@ jint os::init_2(void)
       UseNUMA = true;
     }
   }
+
 
   if (MaxFDLimit) {
     // set the number of file descriptors to max. print out error
@@ -5403,6 +5463,9 @@ jint os::init_2(void)
 
   return JNI_OK;
 }
+
+
+
 
 // Mark the polling page as unreadable
 void os::make_polling_page_unreadable(void) {
