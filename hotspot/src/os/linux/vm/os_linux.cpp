@@ -1497,7 +1497,8 @@ void os::Linux::capture_initial_stack(size_t max_size) {
 
   uintptr_t stack_top;
   address low, high;
-  // 基于操作系统的/proc/self/maps找出满足给定虚拟内存地址addr的上界(vma_high)、下界(vma_low)
+  // 豆包有解释: 初始线程的栈不是零散分配的，而是在进程启动时，由操作系统内核+glibc 启动代码一次性完成的「大块匿名映射」，这意味着它会在/proc/self/maps中独占一行
+  // 所以此处基于/proc/self/maps找出满足给定虚拟内存地址addr的上界(vma_high)、下界(vma_low)
   if (find_vma((address)stack_start, &low, &high)) {
     // success, "high" is the true stack top. (ignore "low", because initial
     // thread stack grows on demand, its real bottom is high - RLIMIT_STACK.)
@@ -5352,6 +5353,11 @@ jint os::init_2(void)
 
   Linux::install_signal_handlers();
 
+
+  // StackYellowPages: X86_64下默认为2
+  // StackRedPages: X86_64下默认为1
+  // StackShadowPages: X86_64下默认为20(如果是调试模式会是22)
+  //
   // Check minimum allowable stack size for thread creation and to initialize
   // the java system classes, including StackOverflowError - depends on page
   // size.  Add a page for compiler2 recursion in main thread.
@@ -5360,6 +5366,8 @@ jint os::init_2(void)
   os::Linux::min_stack_allowed = MAX2(os::Linux::min_stack_allowed,
             (size_t)(StackYellowPages+StackRedPages+StackShadowPages) * Linux::page_size() +
                     (2*BytesPerWord COMPILER2_PRESENT(+1)) * Linux::vm_default_page_size());
+  tty->print_cr("[Fire-Constant] OS(init-stack). StackYellowPages=%d, StackRedPages=%d, StackShadowPages=%d, min_stack_allowed=%d, min_stack_allowed(finally)=%d."
+        StackYellowPages, StackRedPages, StackShadowPages, os::Linux::min_stack_allowed, min_stack_allowed);
 
   size_t threadStackSizeInBytes = ThreadStackSize * K;
   if (threadStackSizeInBytes != 0 &&

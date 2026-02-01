@@ -56,15 +56,18 @@ define_pd_global(intx, OptoLoopAlignment,        16);
 define_pd_global(intx, InlineFrequencyCount,     100);
 define_pd_global(intx, InlineSmallCode,          1000);
 
+
 define_pd_global(intx, StackYellowPages, NOT_WINDOWS(2) WINDOWS_ONLY(3));
 define_pd_global(intx, StackRedPages, 1);
 #ifdef AMD64
 // Very large C++ stack frames using solaris-amd64 optimized builds
 // due to lack of optimization caused by C++ compiler bugs
+// 看这里
 define_pd_global(intx, StackShadowPages, NOT_WIN64(20) WIN64_ONLY(6) DEBUG_ONLY(+2));
 #else
 define_pd_global(intx, StackShadowPages, 4 DEBUG_ONLY(+5));
 #endif // AMD64
+
 
 define_pd_global(intx, PreInflateSpin,           10);
 
