@@ -1316,6 +1316,7 @@ static bool find_vma(address addr, address* vma_low, address* vma_high) {
 
 
 // "捕获"原始线程(primordial thread)的信息
+// 这里的入参max_size为初始化算出的栈大小ThreadStackSize，默认情况下为1024KB
 // Locate primordial thread stack. This special handling of primordial thread stack
 // is needed because pthread_getattr_np() on most (all?) Linux distros returns
 // bogus value for the primordial process thread. While the launcher has created
@@ -1374,7 +1375,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   if (p && *p) {
     // 走这个分支
     stack_start = *p;
-    tty->print_cr("[Fire-Constant] OS(init). __libc_stack_end=" PTR_FORMAT, p2i(p));
+    tty->print_cr("[Fire-Constant] OS(init). stack_size=%d, __libc_stack_end=" PTR_FORMAT, stack_size, p2i(p));
   } else {
     // 代码已经验证了上面的分支，所以下面的分支可以先不看(可以做个了解)
     // see if we can get the start_stack field from /proc/self/stat
@@ -1523,6 +1524,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   if (max_size > 0) {
     _initial_thread_stack_size = MIN2(max_size, stack_size);
   } else {
+    // 不走这个分支
     // Accept the rlimit max, but if stack is unlimited then it will be huge, so
     // clamp it at 8MB as we do on Solaris
     _initial_thread_stack_size = MIN2(stack_size, 8*M);
