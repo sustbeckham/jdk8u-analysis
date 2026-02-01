@@ -5366,8 +5366,8 @@ jint os::init_2(void)
   os::Linux::min_stack_allowed = MAX2(os::Linux::min_stack_allowed,
             (size_t)(StackYellowPages+StackRedPages+StackShadowPages) * Linux::page_size() +
                     (2*BytesPerWord COMPILER2_PRESENT(+1)) * Linux::vm_default_page_size());
-  tty->print_cr("[Fire-Constant] OS(init-stack). StackYellowPages=%d, StackRedPages=%d, StackShadowPages=%d, min_stack_allowed=%d, min_stack_allowed(finally)=%d."
-        StackYellowPages, StackRedPages, StackShadowPages, os::Linux::min_stack_allowed, min_stack_allowed);
+  tty->print_cr("[Fire-Constant] OS(init-stack). StackYellowPages=%d, StackRedPages=%d, StackShadowPages=%d, min_stack_allowed=%d."
+        StackYellowPages, StackRedPages, StackShadowPages, os::Linux::min_stack_allowed);
 
   size_t threadStackSizeInBytes = ThreadStackSize * K;
   if (threadStackSizeInBytes != 0 &&
