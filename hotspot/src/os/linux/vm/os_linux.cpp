@@ -1375,7 +1375,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   if (p && *p) {
     // 走这个分支
     stack_start = *p;
-    tty->print_cr("[Fire-Constant] OS(init). stack_size=%d, __libc_stack_end=" PTR_FORMAT, stack_size, p2i(p));
+    tty->print_cr("[Fire-Constant] OS(init). stack_size=%d(MB), __libc_stack_end=" PTR_FORMAT, stack_size/1024/1024, p2i(p));
   } else {
     // 代码已经验证了上面的分支，所以下面的分支可以先不看(可以做个了解)
     // see if we can get the start_stack field from /proc/self/stat
