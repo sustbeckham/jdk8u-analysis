@@ -5357,6 +5357,9 @@ jint os::init_2(void)
   // StackYellowPages: X86_64下默认为2
   // StackRedPages: X86_64下默认为1
   // StackShadowPages: X86_64下默认为20(如果是调试模式会是22)
+  // 注意这里的_vm_default_page_size大小是8K
+  // min_stack_allowed最初定义在os_linux_x86.cpp下，限定为64K
+  // 这里二次计算的min_stack_allowed结果约为228K(调试模型下为236K)
   //
   // Check minimum allowable stack size for thread creation and to initialize
   // the java system classes, including StackOverflowError - depends on page
@@ -5366,8 +5369,11 @@ jint os::init_2(void)
   os::Linux::min_stack_allowed = MAX2(os::Linux::min_stack_allowed,
             (size_t)(StackYellowPages+StackRedPages+StackShadowPages) * Linux::page_size() +
                     (2*BytesPerWord COMPILER2_PRESENT(+1)) * Linux::vm_default_page_size());
-  tty->print_cr("[Fire-Constant] OS(init-stack). StackYellowPages=%d, StackRedPages=%d, StackShadowPages=%d, min_stack_allowed=%d.", StackYellowPages, StackRedPages, StackShadowPages, os::Linux::min_stack_allowed);
+  tty->print_cr("[Fire-Constant] OS(init-stack). StackYellowPages=%d, StackRedPages=%d, StackShadowPages=%d, min_stack_allowed=%d(KB), ThreadStackSize=%d(KB).",
+   StackYellowPages, StackRedPages, StackShadowPages, os::Linux::min_stack_allowed/1024, ThreadStackSize);
 
+
+  // ThreadStackSize默认配置1024K, 不能小于这个值
   size_t threadStackSizeInBytes = ThreadStackSize * K;
   if (threadStackSizeInBytes != 0 &&
       threadStackSizeInBytes < os::Linux::min_stack_allowed) {
@@ -5377,6 +5383,8 @@ jint os::init_2(void)
         return JNI_ERR;
   }
 
+
+  // 如果没有其他外部定义，现在线程栈确定为1024KB
   // Make the stack size a multiple of the page size so that
   // the yellow/red zones can be guarded.
   JavaThread::set_stack_size_at_create(round_to(threadStackSizeInBytes,

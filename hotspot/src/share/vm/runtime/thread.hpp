@@ -1667,9 +1667,12 @@ public:
   static inline size_t stack_size_at_create(void) {
     return _stack_size_at_create;
   }
+
+
   static inline void set_stack_size_at_create(size_t value) {
     _stack_size_at_create = value;
   }
+
 
 #if INCLUDE_ALL_GCS
   // SATB marking queue support
