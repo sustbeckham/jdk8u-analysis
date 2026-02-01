@@ -641,7 +641,6 @@ void* Universe::non_oop_word() {
 }
 
 jint universe_init() {
-  tty->print_cr("[Fire] start init.");
   tty->print_cr("[Fire-Constant] 1U=%d.", 1U);
   tty->print_cr("[Fire-Constant] OS. AMD64=%d, _LP64=%d, __amd64__=%d.", AMD64, _LP64, __amd64__);
   tty->print_cr("[Fire-Constant] LIB. __GNUC__=%d.", __GNUC__);
@@ -652,8 +651,8 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
   tty->print_cr("[Fire-Constant] UseCompressedClassPointers=%d.", UseCompressedClassPointers);
   tty->print_cr("[Fire-Constant] UseSharedSpaces=%d.", UseSharedSpaces);
-  tty->print_cr("[Fire-Constant] OopEncodingHeapMax=%d(GB).", OopEncodingHeapMax/1024/1024/1024);
-  tty->print_cr("[Fire-Constant] CompressedClassSpaceSize=%d(GB).", CompressedClassSpaceSize/1024/1024/1024);
+  tty->print_cr("[Fire-Constant] OopEncodingHeapMax=%d(MB).", OopEncodingHeapMax/1024/1024);
+  tty->print_cr("[Fire-Constant] CompressedClassSpaceSize=%d(MB).", CompressedClassSpaceSize/1024/1024);
 
   tty->print_cr("[Fire-Constant] ParallelGCThreads=%d.", ParallelGCThreads);
   tty->print_cr("[Fire-Constant] UseParallelGC=%d.", UseParallelGC);

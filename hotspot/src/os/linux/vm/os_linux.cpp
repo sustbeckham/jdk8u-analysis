@@ -1363,15 +1363,20 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   // /proc/<pid>/stat. If neither of them works, we use current stack pointer
   // as a hint, which should work well in most cases.
 
+
+  // 老把戏了，在当前线程的栈上申请内存，回头基于stack_start的地址和指定栈顶栈低比较是不是在其范围之内
   uintptr_t stack_start;
 
+
+  // __libc_stack_end是glibc为进程的primordial thread定义的全局只读变量，它的核心作用是：保存进程primordial thread的栈底地址。
   // try __libc_stack_end first
   uintptr_t *p = (uintptr_t *)dlsym(RTLD_DEFAULT, "__libc_stack_end");
   if (p && *p) {
-    tty->print_cr("[Fire-TEMP] FIRST.");
+    // 走这个分支
     stack_start = *p;
+    tty->print_cr("[Fire-Constant] OS(init). __libc_stack_end=" PTR_FORMAT, p2i(p));
   } else {
-    tty->print_cr("[Fire-TEMP] SECOND.");
+    // 代码已经验证了上面的分支，所以下面的分支可以先不看(可以做个了解)
     // see if we can get the start_stack field from /proc/self/stat
     FILE *fp;
     int pid;
@@ -1478,8 +1483,11 @@ void os::Linux::capture_initial_stack(size_t max_size) {
       warning("Can't detect primordial thread stack location - no /proc/self/stat");
       stack_start = (uintptr_t) &rlim;
     }
-  }
+  } // 不看的分支截止到这里
 
+
+  // 如下注释描述，我们现在已经有了stack_start这个栈底地址，下一步要去看栈顶
+  //
   // Now we have a pointer (stack_start) very close to the stack top, the
   // next thing to do is to figure out the exact location of stack top. We
   // can find out the virtual memory area that contains stack_start by
@@ -1495,6 +1503,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
     // thread stack grows on demand, its real bottom is high - RLIMIT_STACK.)
     stack_top = (uintptr_t)high;
   } else {
+    // 这个分支可以暂时不用看
     // failed, likely because /proc/self/maps does not exist
     warning("Can't detect primordial thread stack location - find_vma failed");
     // best effort: stack_start is normally within a few pages below the real
@@ -1507,6 +1516,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
 
   // stack_top could be partially down the page so align it
   stack_top = align_size_up(stack_top, page_size());
+
 
   // Allowed stack value is minimum of max_size and what we derived from rlimit
   if (max_size > 0) {
