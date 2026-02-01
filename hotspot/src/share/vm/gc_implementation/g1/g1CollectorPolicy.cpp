@@ -1926,6 +1926,9 @@ void G1CollectorPolicy::add_to_incremental_cset_info(HeapRegion* hr, size_t rs_l
   hr->set_predicted_elapsed_time_ms(region_elapsed_time_ms);
 }
 
+
+
+
 void G1CollectorPolicy::update_incremental_cset_info(HeapRegion* hr,
                                                      size_t new_rs_length) {
   // Update the CSet information that is dependent on the new RS length
@@ -1954,6 +1957,9 @@ void G1CollectorPolicy::update_incremental_cset_info(HeapRegion* hr,
   hr->set_recorded_rs_length(new_rs_length);
   hr->set_predicted_elapsed_time_ms(new_region_elapsed_time_ms);
 }
+
+
+
 
 void G1CollectorPolicy::add_region_to_incremental_cset_common(HeapRegion* hr) {
   assert(hr->is_young(), "invariant");

@@ -303,6 +303,9 @@ Thread::Thread() {
 #endif /* ASSERT */
 }
 
+
+
+
 void Thread::initialize_thread_local_storage() {
   // Note: Make sure this method only calls
   // non-blocking operations. Otherwise, it might not work
@@ -319,9 +322,13 @@ void Thread::initialize_thread_local_storage() {
 
 
 
+// 记录线程的栈底和栈大小，如果是Java线程，还会记录线程栈溢出的上限(实测上限预留92KB, DEBUG版本预留100KB)
 void Thread::record_stack_base_and_size() {
+  // 栈底
   set_stack_base(os::current_stack_base());
+  // 栈大小
   set_stack_size(os::current_stack_size());
+  // 计算Java线程栈溢出的上限(实测上限预留92KB, DEBUG版本预留100KB)
   if (is_Java_thread()) {
     ((JavaThread*) this)->set_stack_overflow_limit();
   }

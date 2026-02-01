@@ -52,6 +52,7 @@
 // MADV_DONTNEED on Linux keeps the virtual memory mapping, but zaps the
 // physical memory page (i.e. similar to MADV_FREE on Solaris).
 
+// 没定义AMD64的才看这个分支，不看这里
 #if !defined(AMD64) && !defined(MINIMIZE_RAM_USAGE)
 Thread* ThreadLocalStorage::_sp_map[1UL << (SP_BITLENGTH - PAGE_SHIFT)];
 
@@ -84,6 +85,11 @@ void ThreadLocalStorage::pd_set_thread(Thread* thread) {
     _sp_map[(uintptr_t)p >> PAGE_SHIFT] = thread;
   }
 }
+
+
+
+
+// 这里才是要关注的.....
 #else
 
 void ThreadLocalStorage::generate_code_for_get_thread() {

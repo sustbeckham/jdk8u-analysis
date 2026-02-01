@@ -739,9 +739,11 @@ size_t os::Linux::default_guard_size(os::ThreadType thr_type) {
 //
 // ** P1 (aka bottom) and size ( P2 = P1 - size) are the address and stack size returned from
 //    pthread_attr_getstack()
-
+//
+// 获取当前线程栈的「基地址（底部地址）」和「栈大小」，并分别存储到bottom和size这两个变量中。
 static void current_stack_region(address * bottom, size_t * size) {
   if (os::is_primordial_thread()) {
+     // 这个分支可以先不用看，和进程的初始线程逻辑相关
      // primordial thread needs special handling because pthread_getattr_np()
      // may return bogus value.
      *bottom = os::Linux::initial_thread_stack_bottom();
@@ -749,8 +751,14 @@ static void current_stack_region(address * bottom, size_t * size) {
   } else {
      pthread_attr_t attr;
 
+
+     // pthread_self(): 返回「当前正在执行该函数的线程」的线程ID
+     // pthread_getattr_np(): 获取到指定线程的属性信息
+     // &attr: 将上述获取到的线程信息存储在这个attr变量里
      int rslt = pthread_getattr_np(pthread_self(), &attr);
 
+
+     // 非0代表异常先不看
      // JVM needs to know exact stack location, abort if it fails
      if (rslt != 0) {
        if (rslt == ENOMEM) {
@@ -760,12 +768,14 @@ static void current_stack_region(address * bottom, size_t * size) {
        }
      }
 
+
+     // 从初始化并填充好的变量attr中，读取线程栈的「基地址（底部地址）」和「栈大小」，并分别存储到bottom和size这两个变量中。
      if (pthread_attr_getstack(&attr, (void **)bottom, size) != 0) {
          fatal("Can not locate current stack attributes!");
      }
 
-     pthread_attr_destroy(&attr);
 
+     pthread_attr_destroy(&attr);
   }
 
 
@@ -776,23 +786,35 @@ static void current_stack_region(address * bottom, size_t * size) {
 
 
 
+// 栈底
 address os::current_stack_base() {
   address bottom;
   size_t size;
+
+
+  // 获取当前线程栈的「基地址（底部地址）」和「栈大小」，并分别存储到bottom和size这两个变量中。
   current_stack_region(&bottom, &size);
+  // 他娘的有点搞懵逼了...?
   return (bottom + size);
 }
 
 
 
 
+// 栈大小
 size_t os::current_stack_size() {
   // stack size includes normal stack and HotSpot guard pages
   address bottom;
   size_t size;
+
+
+  // 获取当前线程栈的「基地址（底部地址）」和「栈大小」，并分别存储到bottom和size这两个变量中。
   current_stack_region(&bottom, &size);
   return size;
 }
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // helper functions for fatal error handler

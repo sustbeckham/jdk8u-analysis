@@ -76,6 +76,7 @@ void ConcurrentG1RefineThread::initialize() {
     // A thread deactivates once the number of buffer reached a deactivation threshold
     _deactivation_threshold = MAX2<int>(_threshold - cg1r()->thread_threshold_step(), cg1r()->green_zone());
   } else {
+    // 这个应该是直接给那个采样现场留的？
     set_active(true);
   }
 }
@@ -109,6 +110,9 @@ void ConcurrentG1RefineThread::sample_young_list_rs_lengths() {
   }
 }
 
+
+
+
 void ConcurrentG1RefineThread::run_young_rs_sampling() {
   DirtyCardQueueSet& dcqs = JavaThread::dirty_card_queue_set();
   _vtime_start = os::elapsedVTime();
@@ -128,6 +132,9 @@ void ConcurrentG1RefineThread::run_young_rs_sampling() {
     _monitor->wait(Mutex::_no_safepoint_check_flag, G1ConcRefinementServiceIntervalMillis);
   }
 }
+
+
+
 
 void ConcurrentG1RefineThread::wait_for_completed_buffers() {
   DirtyCardQueueSet& dcqs = JavaThread::dirty_card_queue_set();
@@ -158,9 +165,13 @@ void ConcurrentG1RefineThread::activate() {
   _monitor->notify();
 }
 
+
+
+
 void ConcurrentG1RefineThread::deactivate() {
   MutexLockerEx x(_monitor, Mutex::_no_safepoint_check_flag);
   if (_worker_id > 0) {
+    // G1TraceConcRefinement默认false不开启
     if (G1TraceConcRefinement) {
       DirtyCardQueueSet& dcqs = JavaThread::dirty_card_queue_set();
       gclog_or_tty->print_cr("G1-Refine-deactivated worker %d, off threshold %d, current %d",
@@ -178,9 +189,13 @@ void ConcurrentG1RefineThread::deactivate() {
 
 // 上面线程初始化后，调用os::create_thread完成操作系统层面的线程创建后会回到这里
 void ConcurrentG1RefineThread::run() {
+  // 初始化栈大小相关内容
   initialize_in_thread();
+  // 等待universe.cpp那一坨初始化完成
   wait_for_universe_init();
 
+
+  // 有1个线程负责去采样了(之前有提过说这个线程组故意多加了一个线程)
   if (_worker_id >= cg1r()->worker_thread_num()) {
     run_young_rs_sampling();
     terminate();
@@ -189,6 +204,7 @@ void ConcurrentG1RefineThread::run() {
 
   _vtime_start = os::elapsedVTime();
   while (!_should_terminate) {
+    // 这里是全局的dcqs
     DirtyCardQueueSet& dcqs = JavaThread::dirty_card_queue_set();
 
     // Wait for work

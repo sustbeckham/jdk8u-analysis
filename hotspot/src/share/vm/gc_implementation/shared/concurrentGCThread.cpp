@@ -65,8 +65,11 @@ void ConcurrentGCThread::create_and_start() {
 
 
 void ConcurrentGCThread::initialize_in_thread() {
+  // 计算栈溢出的上限(实测上限预留92KB, DEBUG版本预留100KB)
   this->record_stack_base_and_size();
+  // [先跳过...]
   this->initialize_thread_local_storage();
+  // [JNI先跳过...]
   this->set_active_handles(JNIHandleBlock::allocate_block());
   // From this time Thread::current() should be working.
   assert(this == Thread::current(), "just checking");
@@ -75,12 +78,16 @@ void ConcurrentGCThread::initialize_in_thread() {
 
 
 
+// 等待universe.cpp那一坨初始化完成
 void ConcurrentGCThread::wait_for_universe_init() {
   MutexLockerEx x(CGC_lock, Mutex::_no_safepoint_check_flag);
   while (!is_init_completed() && !_should_terminate) {
     CGC_lock->wait(Mutex::_no_safepoint_check_flag, 200);
   }
 }
+
+
+
 
 void ConcurrentGCThread::terminate() {
   // Signal that it is terminated

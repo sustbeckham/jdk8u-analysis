@@ -1207,12 +1207,18 @@ static void restore_thread_pointer(void* p) {
   os::thread_local_storage_at_put(ThreadLocalStorage::thread_index(), thread);
 }
 
+
+
+
 int os::allocate_thread_local_storage() {
   pthread_key_t key;
   int rslt = pthread_key_create(&key, restore_thread_pointer);
   assert(rslt == 0, "cannot allocate thread local storage");
   return (int)key;
 }
+
+
+
 
 // Note: This is currently not used by VM, as we don't destroy TLS key
 // on VM exit.
@@ -1241,6 +1247,7 @@ extern "C" Thread* get_thread() {
 //
 // Check if current thread is the primordial thread, similar to Solaris thr_main.
 bool os::is_primordial_thread(void) {
+  // 当前线程栈开辟内存
   char dummy;
   // If called before init complete, thread stack bottom will be null.
   // Can be called if fatal error occurs before initialization.
@@ -1251,6 +1258,8 @@ bool os::is_primordial_thread(void) {
   if ((address)&dummy >= os::Linux::initial_thread_stack_bottom() &&
       (address)&dummy < os::Linux::initial_thread_stack_bottom() +
                         os::Linux::initial_thread_stack_size()) {
+       // 栈上开辟的内存是否在primordial thread的范围里
+       // [待确认: 不是说栈是高地址向地址生长么，这里怎么感觉是反的...]
        return true;
   } else {
        return false;
@@ -1317,6 +1326,7 @@ static bool find_vma(address addr, address* vma_low, address* vma_high) {
 
 // "捕获"原始线程(primordial thread)的信息
 // 这里的入参max_size为初始化算出的栈大小ThreadStackSize，默认情况下为1024KB
+// *** 看的云里雾里，R大也说这个代码很恶心，释然了...
 // Locate primordial thread stack. This special handling of primordial thread stack
 // is needed because pthread_getattr_np() on most (all?) Linux distros returns
 // bogus value for the primordial process thread. While the launcher has created
@@ -1375,7 +1385,7 @@ void os::Linux::capture_initial_stack(size_t max_size) {
   if (p && *p) {
     // 走这个分支
     stack_start = *p;
-    tty->print_cr("[Fire-Constant] OS(init). stack_size=%d(MB), __libc_stack_end=" PTR_FORMAT, stack_size/1024/1024, p2i(p));
+    tty->print_cr("[Fire-Constant] OS(init). stack_size=%d, __libc_stack_end=" PTR_FORMAT, stack_size, p2i(p));
   } else {
     // 代码已经验证了上面的分支，所以下面的分支可以先不看(可以做个了解)
     // see if we can get the start_stack field from /proc/self/stat
@@ -1522,6 +1532,8 @@ void os::Linux::capture_initial_stack(size_t max_size) {
 
   // Allowed stack value is minimum of max_size and what we derived from rlimit
   if (max_size > 0) {
+    // 上面的stack_size从rlimit来的数据返回的接近8M, max_size是上面算出的默认1M
+    // 所以绝大部分情况这里_initial_thread_stack_size大小为1MB
     _initial_thread_stack_size = MIN2(max_size, stack_size);
   } else {
     // 不走这个分支

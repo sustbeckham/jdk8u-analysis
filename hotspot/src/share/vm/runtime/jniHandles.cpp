@@ -280,6 +280,9 @@ void JNIHandleBlock::zap() {
   }
 }
 
+
+
+
 JNIHandleBlock* JNIHandleBlock::allocate_block(Thread* thread)  {
   assert(thread == NULL || thread == Thread::current(), "sanity check");
   JNIHandleBlock* block;
@@ -326,6 +329,8 @@ JNIHandleBlock* JNIHandleBlock::allocate_block(Thread* thread)  {
   debug_only(block->_allocate_before_rebuild = -1);
   return block;
 }
+
+
 
 
 void JNIHandleBlock::release_block(JNIHandleBlock* block, Thread* thread) {

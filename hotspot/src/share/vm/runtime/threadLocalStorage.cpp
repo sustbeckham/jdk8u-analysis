@@ -50,14 +50,22 @@ Thread* ThreadLocalStorage::get_thread_slow() {
   return (Thread*) os::thread_local_storage_at(ThreadLocalStorage::thread_index());
 }
 
+
+
+
 void ThreadLocalStorage::set_thread(Thread* thread) {
   pd_set_thread(thread);
 
+
+  // 不看
   // The following ensure that any optimization tricks we have tried
   // did not backfire on us:
   guarantee(get_thread()      == thread, "must be the same thread, quickly");
   guarantee(get_thread_slow() == thread, "must be the same thread, slowly");
 }
+
+
+
 
 void ThreadLocalStorage::init() {
   assert(!is_initialized(),

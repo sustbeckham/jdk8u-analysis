@@ -1331,12 +1331,16 @@ class JavaThread: public Thread {
   bool reguard_stack(void);
 
   address stack_overflow_limit() { return _stack_overflow_limit; }
+
+
+  // 计算栈溢出的上限(实测上限预留92KB, DEBUG版本预留100KB)
   void set_stack_overflow_limit() {
     _stack_overflow_limit = _stack_base - _stack_size +
                             ((StackShadowPages +
                               StackYellowPages +
                               StackRedPages) * os::vm_page_size());
   }
+
 
   // Misc. accessors/mutators
   void set_do_not_unlock(void)                   { _do_not_unlock_if_synchronized = true; }

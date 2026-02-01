@@ -277,16 +277,25 @@ bool YoungList::check_list_empty(bool check_sample) {
   return ret;
 }
 
+
+
+
 void
 YoungList::rs_length_sampling_init() {
   _sampled_rs_lengths = 0;
   _curr               = _head;
 }
 
+
+
+
 bool
 YoungList::rs_length_sampling_more() {
   return _curr != NULL;
 }
+
+
+
 
 void
 YoungList::rs_length_sampling_next() {
@@ -309,6 +318,9 @@ YoungList::rs_length_sampling_next() {
     // gclog_or_tty->print_cr("last sampled RS lengths = %d", _last_sampled_rs_lengths);
   }
 }
+
+
+
 
 void
 YoungList::reset_auxilary_lists() {
