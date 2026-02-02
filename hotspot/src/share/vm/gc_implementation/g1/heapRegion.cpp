@@ -399,6 +399,9 @@ HeapRegion::object_iterate_mem_careful(MemRegion mr,
   return NULL;
 }
 
+
+
+
 HeapWord*
 HeapRegion::
 oops_on_card_seq_iterate_careful(MemRegion mr,
@@ -501,6 +504,9 @@ oops_on_card_seq_iterate_careful(MemRegion mr,
 
   return NULL;
 }
+
+
+
 
 // Code roots support
 

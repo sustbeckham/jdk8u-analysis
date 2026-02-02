@@ -61,6 +61,9 @@ bool DirtyCardQueue::apply_closure_to_buffer(CardTableEntryClosure* cl,
       // Set the entry to null, so we don't do it again (via the test
       // above) if we reconsider this buffer.
       if (consume) buf[ind] = NULL;
+
+      // 闭包处理
+      // 有这么个继承关系 RefineRecordRefsIntoCSCardTableEntryClosure -> CardTableEntryClosure，所以这里执行的应是前者
       if (!cl->do_card_ptr(card_ptr, worker_i)) return false;
     }
   }
@@ -200,6 +203,9 @@ DirtyCardQueueSet::get_completed_buffer(int stop_at) {
   return nd;
 }
 
+
+
+
 bool DirtyCardQueueSet::
 apply_closure_to_completed_buffer_helper(CardTableEntryClosure* cl,
                                          uint worker_i,
@@ -223,6 +229,9 @@ apply_closure_to_completed_buffer_helper(CardTableEntryClosure* cl,
   }
 }
 
+
+
+
 bool DirtyCardQueueSet::apply_closure_to_completed_buffer(CardTableEntryClosure* cl,
                                                           uint worker_i,
                                                           int stop_at,
@@ -233,6 +242,9 @@ bool DirtyCardQueueSet::apply_closure_to_completed_buffer(CardTableEntryClosure*
   if (res) Atomic::inc(&_processed_buffers_rs_thread);
   return res;
 }
+
+
+
 
 void DirtyCardQueueSet::apply_closure_to_all_completed_buffers(CardTableEntryClosure* cl) {
   BufferNode* nd = _completed_buffers_head;
@@ -245,6 +257,9 @@ void DirtyCardQueueSet::apply_closure_to_all_completed_buffers(CardTableEntryClo
     nd = nd->next();
   }
 }
+
+
+
 
 void DirtyCardQueueSet::par_apply_closure_to_all_completed_buffers(CardTableEntryClosure* cl) {
   BufferNode* nd = _cur_par_buffer_node;

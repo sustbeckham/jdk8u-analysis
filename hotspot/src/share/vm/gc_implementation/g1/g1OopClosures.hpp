@@ -154,6 +154,9 @@ public:
   bool apply_to_weak_ref_discovered_field() { return true; }
 };
 
+
+
+
 class FilterOutOfRegionClosure: public ExtendedOopClosure {
   HeapWord* _r_bottom;
   HeapWord* _r_end;
@@ -165,6 +168,9 @@ public:
   virtual void do_oop(narrowOop* p) { do_oop_nv(p); }
   bool apply_to_weak_ref_discovered_field() { return true; }
 };
+
+
+
 
 // Closure for iterating over object fields during concurrent marking
 class G1CMOopClosure : public MetadataAwareOopClosure {

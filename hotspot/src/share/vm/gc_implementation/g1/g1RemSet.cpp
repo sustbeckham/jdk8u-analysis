@@ -257,6 +257,9 @@ void G1RemSet::scanRS(G1ParPushHeapRSClosure* oc,
   _g1p->phase_times()->record_time_secs(G1GCPhaseTimes::CodeRoots, worker_i, scanRScl.strong_code_root_scan_time_sec());
 }
 
+
+
+
 // Closure used for updating RSets and recording references that
 // point into the collection set. Only called during an
 // evacuation pause.
@@ -289,6 +292,9 @@ public:
     return true;
   }
 };
+
+
+
 
 void G1RemSet::updateRS(DirtyCardQueue* into_cset_dcq, uint worker_i) {
   G1GCParPhaseTimesTracker x(_g1p->phase_times(), G1GCPhaseTimes::UpdateRS, worker_i);
@@ -447,7 +453,8 @@ G1UpdateRSOrPushRefOopClosure(G1CollectedHeap* g1h,
 
 
 
-
+// 最终Refine线程执行到的地方
+//
 // Returns true if the given card contains references that point
 // into the collection set, if we're checking for such references;
 // false otherwise.
@@ -461,6 +468,7 @@ bool G1RemSet::refine_card(jbyte* card_ptr, uint worker_i,
                  _ct_bs->addr_for(card_ptr),
                  _g1->addr_to_region(_ct_bs->addr_for(card_ptr))));
 
+  // 从这里可以看出，仅处理脏(dirty)卡。
   // If the card is no longer dirty, nothing to do.
   if (*card_ptr != CardTableModRefBS::dirty_card_val()) {
     // No need to return that this card contains refs that point
@@ -468,11 +476,22 @@ bool G1RemSet::refine_card(jbyte* card_ptr, uint worker_i,
     return false;
   }
 
+
+  // 当前脏卡对应的实际Region起始地址?[应该是]
   // Construct the region representing the card.
   HeapWord* start = _ct_bs->addr_for(card_ptr);
+
+
+  // 拿到实际对应的Region指针
   // And find the region containing it.
   HeapRegion* r = _g1->heap_region_containing(start);
 
+
+  // 译: 既然年轻代区域本身会被标记为脏卡，且屏障后处理逻辑理应过滤掉这类脏卡、不会将其入队，那么我们为何还要在此检查卡片是否属于年轻代区域？
+  // 当我们将新区域分配为「分配区域」时，实际会在释放锁之后才对该区域的卡片进行脏卡标记 —— 因为持有锁期间进行卡片脏化会成为性能瓶颈。
+  // 因此，在所有卡片完成脏化标记之前，其他线程有可能（在获取锁后）在该区域内分配对象。
+  // 这种情况虽不常见，也极少发生，但确实存在。
+  // 因此，下文的额外检查机制，就是为了过滤掉这类脏卡。
   // Why do we have to check here whether a card is on a young region,
   // given that we dirty young regions and, as a result, the
   // post-barrier is supposed to filter them out and never to enqueue
@@ -531,16 +550,21 @@ bool G1RemSet::refine_card(jbyte* card_ptr, uint worker_i,
     // Hence we could see its young type change at any time.
   }
 
+
+  // 这说明这部分信息在Region里?...卡表不是有单独的堆外数据结构么
   // Don't use addr_for(card_ptr + 1) which can ask for
   // a card beyond the heap.  This is not safe without a perm
   // gen at the upper end of the heap.
   HeapWord* end   = start + CardTableModRefBS::card_size_in_words;
   MemRegion dirtyRegion(start, end);
 
+
+  // 这个值默认是0，这里不执行
 #if CARD_REPEAT_HISTO
   init_ct_freq_table(_g1->max_capacity());
   ct_freq_note_card(_ct_bs->index_for(start));
 #endif
+
 
   G1ParPushHeapRSClosure* oops_in_heap_closure = NULL;
   if (check_for_refs_into_cset) {
