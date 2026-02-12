@@ -440,12 +440,19 @@ private:
                                    "should not be at a safepoint"));          \
   } while (0)
 
+
+
+
+// 确保当前在safepoint阶段，且当前线程是VMThread(当_should_be_vm_thread_为true的情况下)
 #define assert_at_safepoint(_should_be_vm_thread_)                            \
   do {                                                                        \
     assert(SafepointSynchronize::is_at_safepoint() &&                         \
               ((_should_be_vm_thread_) == Thread::current()->is_VM_thread()), \
            heap_locking_asserts_err_msg("should be at a safepoint"));         \
   } while (0)
+
+
+
 
 #define assert_not_at_safepoint()                                             \
   do {                                                                        \

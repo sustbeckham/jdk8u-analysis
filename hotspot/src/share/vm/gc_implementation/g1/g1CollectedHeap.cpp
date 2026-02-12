@@ -4035,10 +4035,20 @@ void G1CollectedHeap::log_gc_footer(double pause_time_sec) {
   gclog_or_tty->flush();
 }
 
+
+
+
+// G1的垃圾回收主入口
 bool
 G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
+
+  // 确保当前在safepoint阶段，且当前线程是VMThread
   assert_at_safepoint(true /* should_be_vm_thread */);
+
+
+  // 收集动作不可重入，这里确保没有进行中的gc
   guarantee(!is_gc_active(), "collection is not reentrant");
+
 
   if (GC_locker::check_active_before_gc()) {
     return false;
@@ -4106,6 +4116,8 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
     TraceMemoryManagerStats tms(false /* fullGC */, gc_cause(),
                                 yc_type() == Mixed /* allMemoryPoolsAffected */);
 
+
+    // *** G1StressConcRegionFreeing默认为false，所以下面的条件需要执行
     // If the secondary_free_list is not empty, append it to the
     // free_list. No need to wait for the cleanup operation to finish;
     // the region allocation code will check the secondary_free_list
@@ -4178,11 +4190,14 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         // the possible verification above.
         double sample_start_time_sec = os::elapsedTime();
 
+
+        // 默认不执行(这个值在上面初始化的值为0)
 #if YOUNG_LIST_VERBOSE
         gclog_or_tty->print_cr("\nBefore recording pause start.\nYoung_list:");
         _young_list->print();
         g1_policy()->print_collection_set(g1_policy()->inc_cset_head(), gclog_or_tty);
 #endif // YOUNG_LIST_VERBOSE
+
 
         g1_policy()->record_collection_pause_start(sample_start_time_sec);
 
