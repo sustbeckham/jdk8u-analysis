@@ -174,14 +174,17 @@
 #define COMPILER1_PRESENT(code)
 #endif // COMPILER1
 
+
 // COMPILER2 variant
 #ifdef COMPILER2
+// 默认走这里
 #define COMPILER2_PRESENT(code) code
 #define NOT_COMPILER2(code)
 #else // COMPILER2
 #define COMPILER2_PRESENT(code)
 #define NOT_COMPILER2(code) code
 #endif // COMPILER2
+
 
 #ifdef TIERED
 #define TIERED_ONLY(code) code

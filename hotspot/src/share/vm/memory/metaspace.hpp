@@ -279,6 +279,9 @@ class Metaspace : public CHeapObj<mtClass> {
 
 };
 
+
+
+
 class MetaspaceAux : AllStatic {
   static size_t free_chunks_total_words(Metaspace::MetadataType mdtype);
 

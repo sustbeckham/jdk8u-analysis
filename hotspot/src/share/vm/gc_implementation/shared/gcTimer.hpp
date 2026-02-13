@@ -96,6 +96,7 @@ class PhasesStack {
   int count() const;
 };
 
+
 class TimePartitions {
   static const int INITIAL_CAPACITY = 10;
 
@@ -124,6 +125,7 @@ class TimePartitions {
  private:
   void update_statistics(GCPhase* phase);
 };
+
 
 class PhasesIterator {
  public:
@@ -155,11 +157,13 @@ class GCTimer : public ResourceObj {
   void register_gc_pause_end(const Ticks& time = Ticks::now());
 };
 
+
 class STWGCTimer : public GCTimer {
  public:
   virtual void register_gc_start(const Ticks& time = Ticks::now());
   virtual void register_gc_end(const Ticks& time = Ticks::now());
 };
+
 
 class ConcurrentGCTimer : public GCTimer {
  public:

@@ -2804,6 +2804,9 @@ void MetaspaceAux::print_metaspace_change(size_t prev_metadata_used) {
   gclog_or_tty->print("]");
 }
 
+
+
+
 // This is printed when PrintGCDetails
 void MetaspaceAux::print_on(outputStream* out) {
   Metaspace::MetadataType nct = Metaspace::NonClassType;

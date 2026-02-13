@@ -936,6 +936,9 @@ bool ConcurrentMark::nextMarkBitmapIsClear() {
   return cl.complete();
 }
 
+
+
+
 class NoteStartOfMarkHRClosure: public HeapRegionClosure {
 public:
   bool doHeapRegion(HeapRegion* r) {
@@ -946,12 +949,17 @@ public:
   }
 };
 
+
+
+
 void ConcurrentMark::checkpointRootsInitialPre() {
   G1CollectedHeap*   g1h = G1CollectedHeap::heap();
   G1CollectorPolicy* g1p = g1h->g1_policy();
 
   _has_aborted = false;
 
+
+  // 非生产代码不看
 #ifndef PRODUCT
   if (G1PrintReachableAtInitialMark) {
     print_reachable("at-cycle-start",
@@ -966,6 +974,8 @@ void ConcurrentMark::checkpointRootsInitialPre() {
   NoteStartOfMarkHRClosure startcl;
   g1h->heap_region_iterate(&startcl);
 }
+
+
 
 
 void ConcurrentMark::checkpointRootsInitialPost() {

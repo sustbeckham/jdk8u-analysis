@@ -46,6 +46,9 @@ HS_DTRACE_PROBE_DECL1(hotspot, gc__begin, bool);
 HS_DTRACE_PROBE_DECL(hotspot, gc__end);
 #endif /* !USDT2 */
 
+
+
+
 // The same dtrace probe can't be inserted in two different files, so we
 // have to call it here, so it's only in one file.  Can't create new probes
 // for the other file anymore.   The dtrace probes have to remain stable.
@@ -59,6 +62,9 @@ void VM_GC_Operation::notify_gc_begin(bool full) {
 #endif /* USDT2 */
 }
 
+
+
+
 void VM_GC_Operation::notify_gc_end() {
 #ifndef USDT2
   HS_DTRACE_PROBE(hotspot, gc__end);
@@ -68,6 +74,9 @@ void VM_GC_Operation::notify_gc_end() {
 );
 #endif /* USDT2 */
 }
+
+
+
 
 void VM_GC_Operation::acquire_pending_list_lock() {
   // we may enter this with pending exception set

@@ -226,6 +226,7 @@ class VM_CollectForMetadataAllocation: public VM_GC_Operation {
   bool initiate_concurrent_GC();
 };
 
+
 class SvcGCMarker : public StackObj {
  private:
   JvmtiGCMarker _jgcm;

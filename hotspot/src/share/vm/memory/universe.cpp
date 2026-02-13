@@ -1437,6 +1437,7 @@ void Universe::print_heap_before_gc(outputStream* st, bool ignore_extended) {
                heap()->total_collections(),
                heap()->total_full_collections());
   if (!PrintHeapAtGCExtended || ignore_extended) {
+    // 默认PrintHeapAtGCExtended都是false，所以暂时只看这个分支就好。
     heap()->print_on(st);
   } else {
     heap()->print_extended_on(st);

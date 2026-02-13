@@ -214,6 +214,7 @@ class GCHeapSummaryEventSender : public GCHeapSummaryVisitor {
   void visit(const GCHeapSummary* heap_summary) const {
     const VirtualSpaceSummary& heap_space = heap_summary->heap();
 
+    // AI说这个类是虚拟内部自动生成的...后面再说吧
     EventGCHeapSummary e;
     if (e.should_commit()) {
       e.set_gcId(_gc_id.id());

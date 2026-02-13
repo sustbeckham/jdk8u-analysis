@@ -4086,23 +4086,39 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
   }
 
 
+  // 监控相关，不做核心关注
   _gc_timer_stw->register_gc_start();
-
   _gc_tracer_stw->report_gc_start(gc_cause(), _gc_timer_stw->gc_start());
 
+
+  // 监控trace相关，不做核心关注
   SvcGCMarker sgcm(SvcGCMarker::MINOR);
   ResourceMark rm;
 
+
+  // 输出形如下方的GC日志
+  // {Heap before GC invocations=1026 (full 0):
+  //  garbage-first heap   total 5873664K, used 5230898K [0x0000000568800000, 0x0000000568a059a0, 0x00000007c0800000)
+  //  region size 2048K, 1475 young (3020800K), 24 survivors (49152K)
+  //  Metaspace       used 315146K, capacity 325663K, committed 325760K, reserved 1339392K
+  //  class space    used 34329K, capacity 36137K, committed 36224K, reserved 1048576K
   print_heap_before_gc();
+
+
+  // 监控trace相关，不做核心关注
   trace_heap_before_gc(_gc_tracer_stw);
 
+
+  // 校验相关，不做核心关注
   verify_region_sets_optional();
   verify_dirty_young_regions();
+
 
   // This call will decide whether this pause is an initial-mark
   // pause. If it is, during_initial_mark_pause() will return true
   // for the duration of this pause.
   g1_policy()->decide_on_conc_mark_initiation();
+
 
   // We do not allow initial-mark to be piggy-backed on a mixed GC.
   assert(!g1_policy()->during_initial_mark_pause() ||
@@ -4175,6 +4191,8 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
       increment_total_collections(false /* full gc */);
       increment_gc_time_stamp();
 
+
+      // 默认false，暂时不看这里
       if (VerifyRememberedSets) {
         if (!VerifySilently) {
           gclog_or_tty->print_cr("[Verifying RemSets before GC]");
@@ -4183,10 +4201,17 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         heap_region_iterate(&v_cl);
       }
 
+
+      // 校验的先不看
       verify_before_gc();
+
+
       check_bitmaps("GC Start");
 
+
+      // 这个宏定义在macros.hpp，直接就理解成执行DerivedPointerTable::clear()就好
       COMPILER2_PRESENT(DerivedPointerTable::clear());
+
 
       // Please see comment in g1CollectedHeap.hpp and
       // G1CollectedHeap::ref_processing_init() to see how
@@ -4246,20 +4271,26 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         }
         g1_policy()->phase_times()->record_root_region_scan_wait_time(wait_time_ms);
 
+
+        // 默认不执行(这个值在上面初始化的值为0)
 #if YOUNG_LIST_VERBOSE
         gclog_or_tty->print_cr("\nAfter recording pause start.\nYoung_list:");
         _young_list->print();
 #endif // YOUNG_LIST_VERBOSE
 
+
         if (g1_policy()->during_initial_mark_pause()) {
           concurrent_mark()->checkpointRootsInitialPre();
         }
 
+
+        // 默认不执行(这个值在上面初始化的值为0)
 #if YOUNG_LIST_VERBOSE
         gclog_or_tty->print_cr("\nBefore choosing collection set.\nYoung_list:");
         _young_list->print();
         g1_policy()->print_collection_set(g1_policy()->inc_cset_head(), gclog_or_tty);
 #endif // YOUNG_LIST_VERBOSE
+
 
         g1_policy()->finalize_cset(target_pause_time_ms, evacuation_info);
 
@@ -4289,10 +4320,13 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
           }
         }
 
+
+        // 断言相关先忽略
 #ifdef ASSERT
         VerifyCSetClosure cl;
         collection_set_iterate(&cl);
 #endif // ASSERT
+
 
         setup_surviving_young_words();
 
@@ -4324,10 +4358,13 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         assert(check_young_list_empty(false /* check_heap */),
           "young list should be empty");
 
+
+        // 默认不执行(这个值在上面初始化的值为0)
 #if YOUNG_LIST_VERBOSE
         gclog_or_tty->print_cr("Before recording survivors.\nYoung List:");
         _young_list->print();
 #endif // YOUNG_LIST_VERBOSE
+
 
         g1_policy()->record_survivor_regions(_young_list->survivor_length(),
                                              _young_list->first_survivor_region(),
@@ -4362,11 +4399,14 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
 
         allocate_dummy_regions();
 
+
+        // 默认不执行(这个值在上面初始化的值为0)
 #if YOUNG_LIST_VERBOSE
         gclog_or_tty->print_cr("\nEnd of the pause.\nYoung_list:");
         _young_list->print();
         g1_policy()->print_collection_set(g1_policy()->inc_cset_head(), gclog_or_tty);
 #endif // YOUNG_LIST_VERBOSE
+
 
         _allocator->init_mutator_alloc_region();
 
@@ -4494,6 +4534,9 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
 
   return true;
 }
+
+
+
 
 void G1CollectedHeap::init_for_evac_failure(OopsInHeapRegionClosure* cl) {
   _drain_in_progress = false;

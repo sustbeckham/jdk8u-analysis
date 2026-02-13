@@ -106,7 +106,11 @@ MetaspaceSummary CollectedHeap::create_metaspace_summary() {
                           ms_chunk_free_list_summary, class_chunk_free_list_summary);
 }
 
+
+
+
 void CollectedHeap::print_heap_before_gc() {
+  // 默认false，但当前dw环境会默认设置为true，所以逻辑需要细看
   if (PrintHeapAtGC) {
     Universe::print_heap_before_gc();
   }
@@ -114,6 +118,9 @@ void CollectedHeap::print_heap_before_gc() {
     _gc_heap_log->log_heap_before();
   }
 }
+
+
+
 
 void CollectedHeap::print_heap_after_gc() {
   if (PrintHeapAtGC) {

@@ -1641,16 +1641,22 @@ bool G1CollectorPolicy::force_initial_mark_if_outside_cycle(
   }
 }
 
+
+
+
 void
 G1CollectorPolicy::decide_on_conc_mark_initiation() {
   // We are about to decide on whether this pause will be an
   // initial-mark pause.
 
+
+  // *** 确保当前不在初始标记阶段(Initial Mark)
   // First, during_initial_mark_pause() should not be already set. We
   // will set it here if we have to. However, it should be cleared by
   // the end of the pause (it's only set for the duration of an
   // initial-mark pause).
   assert(!during_initial_mark_pause(), "pre-condition");
+
 
   if (initiate_conc_mark_if_possible()) {
     // We had noticed on a previous pause that the heap occupancy has

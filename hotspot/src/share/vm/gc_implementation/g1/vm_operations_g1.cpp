@@ -118,6 +118,7 @@ void VM_G1IncCollectionPause::doit() {
   }
 
 
+  // GCLocker产生的延迟GC请求，_should_initiate_conc_mark为false
   GCCauseSetter x(g1h, _gc_cause);
   if (_should_initiate_conc_mark) {
     // It's safer to read old_marking_cycles_completed() here, given
@@ -157,6 +158,8 @@ void VM_G1IncCollectionPause::doit() {
     }
   }
 
+
+  // GCLocker产生的延迟GC请求，只用关注这里，等于说又回到了之前G1GC的入口
   _pause_succeeded =
     g1h->do_collection_pause_at_safepoint(_target_pause_time_ms);
   if (_pause_succeeded && _word_size > 0) {
