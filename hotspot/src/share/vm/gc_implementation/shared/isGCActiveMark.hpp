@@ -33,6 +33,8 @@
 // This class provides a method for block structured setting of the
 // _is_gc_active state without requiring accessors in CollectedHeap
 
+
+// 专门搞了个类，就是为了告诉外部当前GC正在进行中
 class IsGCActiveMark : public StackObj {
  public:
   IsGCActiveMark() {

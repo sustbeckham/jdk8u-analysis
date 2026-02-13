@@ -128,6 +128,9 @@ void FreeRegionList::remove_all() {
   verify_optional();
 }
 
+
+
+
 void FreeRegionList::add_ordered(FreeRegionList* from_list) {
   check_mt_safety();
   from_list->check_mt_safety();
@@ -139,6 +142,8 @@ void FreeRegionList::add_ordered(FreeRegionList* from_list) {
     return;
   }
 
+
+  // 断言先不看
   #ifdef ASSERT
   FreeRegionListIterator iter(from_list);
   while (iter.more_available()) {
@@ -150,6 +155,7 @@ void FreeRegionList::add_ordered(FreeRegionList* from_list) {
     hr->set_containing_set(this);
   }
   #endif // ASSERT
+
 
   if (is_empty()) {
     assert(length() == 0 && _tail == NULL, hrs_ext_msg(this, "invariant"));
@@ -196,6 +202,9 @@ void FreeRegionList::add_ordered(FreeRegionList* from_list) {
   verify_optional();
   from_list->verify_optional();
 }
+
+
+
 
 void FreeRegionList::remove_starting_at(HeapRegion* first, uint num_regions) {
   check_mt_safety();

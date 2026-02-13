@@ -645,13 +645,12 @@ jint universe_init() {
   tty->print_cr("[Fire-Constant] OS. AMD64=%d, _LP64=%d, __amd64__=%d.", AMD64, _LP64, __amd64__);
   tty->print_cr("[Fire-Constant] LIB. __GNUC__=%d.", __GNUC__);
   tty->print_cr("[Fire-Constant] CPU. UseNUMA=%d.", UseNUMA);
-  // tty->print_cr("[Fire-Constant] JNI.  USDT2=%d.", USDT2);
   tty->print_cr("[Fire-Constant] Thread. LinuxThreads=%d, NPTL=%d, ReduceSignalUsage=%d, number_of_non_daemon_threads=%d.",
     os::Linux::is_LinuxThreads(), os::Linux::is_NPTL(), ReduceSignalUsage, Threads::number_of_non_daemon_threads());
+  tty->print_cr("[Fire-Constant] Memory. UseCompressedOops=%d, UseCompressedClassPointers=%d, UseTLAB=%d.",
+    UseCompressedOops, UseCompressedClassPointers, UseTLAB);
   tty->print_cr("[Fire-Constant] COMPILER2=%d.", COMPILER2);
   tty->print_cr("[Fire-Constant] INCLUDE_ALL_GCS=%d.", INCLUDE_ALL_GCS);
-  tty->print_cr("[Fire-Constant] UseCompressedOops=%d.", UseCompressedOops);
-  tty->print_cr("[Fire-Constant] UseCompressedClassPointers=%d.", UseCompressedClassPointers);
   tty->print_cr("[Fire-Constant] UseSharedSpaces=%d.", UseSharedSpaces);
   tty->print_cr("[Fire-Constant] OopEncodingHeapMax=%d(MB).", OopEncodingHeapMax/1024/1024);
   tty->print_cr("[Fire-Constant] CompressedClassSpaceSize=%d(MB).", CompressedClassSpaceSize/1024/1024);

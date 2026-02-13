@@ -311,6 +311,9 @@ void G1GCPhaseTimes::note_gc_start(uint active_gc_threads, bool mark_in_progress
   _gc_par_phases[StringDedupTableFixup]->set_enabled(G1StringDedup::is_enabled());
 }
 
+
+
+
 void G1GCPhaseTimes::note_gc_end() {
   for (uint i = 0; i < _active_gc_threads; i++) {
     double worker_time = _gc_par_phases[GCWorkerEnd]->get(i) - _gc_par_phases[GCWorkerStart]->get(i);

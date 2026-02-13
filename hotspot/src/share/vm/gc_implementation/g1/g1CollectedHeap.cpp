@@ -3709,18 +3709,28 @@ G1CollectedHeap* G1CollectedHeap::heap() {
   return _g1h;
 }
 
+
+
+
 void G1CollectedHeap::gc_prologue(bool full /* Ignored */) {
   // always_do_update_barrier = false;
   assert(InlineCacheBuffer::is_empty(), "should have cleaned up ICBuffer");
+
+
   // Fill TLAB's and such
   accumulate_statistics_all_tlabs();
   ensure_parsability(true);
 
+
+  // 默认情况下G1SummarizeRSetStats=false, G1SummarizeRSetStatsPeriod=0，所以此处打印逻辑暂时可以不看
   if (G1SummarizeRSetStats && (G1SummarizeRSetStatsPeriod > 0) &&
       (total_collections() % G1SummarizeRSetStatsPeriod == 0)) {
     g1_rem_set()->print_periodic_summary_info("Before GC RS summary");
   }
 }
+
+
+
 
 void G1CollectedHeap::gc_epilogue(bool full) {
 
@@ -3989,6 +3999,10 @@ class VerifyRegionRemSetClosure : public HeapRegionClosure {
     }
 };
 
+
+
+
+// ========================== 内部调试相关不看-开始 ==========================
 #ifdef ASSERT
 class VerifyCSetClosure: public HeapRegionClosure {
 public:
@@ -4039,7 +4053,13 @@ void G1CollectedHeap::reset_taskqueue_stats() {
   }
 }
 #endif // TASKQUEUE_STATS
+// ========================== 内部调试相关不看-结束 ==========================
 
+
+
+
+// 输出GC正式日志的首行，形如:
+// 2026-02-13T13:34:54.624+0800: 99316.643: [GC pause (G1 Evacuation Pause) (young), 0.0312580 secs]
 void G1CollectedHeap::log_gc_header() {
   if (!G1Log::fine()) {
     return;
@@ -4053,6 +4073,9 @@ void G1CollectedHeap::log_gc_header() {
 
   gclog_or_tty->print("[%s", (const char*)gc_cause_str);
 }
+
+
+
 
 void G1CollectedHeap::log_gc_footer(double pause_time_sec) {
   if (!G1Log::fine()) {
@@ -4177,10 +4200,13 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
     _gc_tracer_stw->report_yc_type(yc_type());
 
 
+    // 监控的逻辑跳过
     TraceCPUTime tcpu(G1Log::finer(), true, gclog_or_tty);
 
 
-    // number_of_non_daemon_threads是总的守护线程个数，随着java程序的变动这个值会变动。
+    // *** number_of_non_daemon_threads是总的守护线程个数，随着java程序的变动这个值会变动。
+    // *** total_workers()和active_workers()暂时默认是8就行(假设8核)
+    // *** 由于UseDynamicNumberOfGCThreads默认是false，所以这里认为返回值=total_workers即可
     uint active_workers = AdaptiveSizePolicy::calc_active_workers(workers()->total_workers(),
                                                                   workers()->active_workers(),
                                                                   Threads::number_of_non_daemon_threads());
@@ -4190,16 +4216,28 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
     workers()->set_active_workers(active_workers);
 
 
+    // 监控的逻辑跳过
     double pause_start_sec = os::elapsedTime();
     g1_policy()->phase_times()->note_gc_start(active_workers, mark_in_progress());
+
+
+    // 输出GC正式日志的首行，形如:
+    // 2026-02-13T13:34:54.624+0800: 99316.643: [GC pause (G1 Evacuation Pause) (young), 0.0312580 secs]
     log_gc_header();
 
+
+    // 监控的逻辑跳过
     TraceCollectorStats tcs(g1mm()->incremental_collection_counters());
     TraceMemoryManagerStats tms(false /* fullGC */, gc_cause(),
                                 yc_type() == Mixed /* allMemoryPoolsAffected */);
 
 
-    // *** G1StressConcRegionFreeing默认为false，所以下面的条件需要执行
+    // *** G1StressConcRegionFreeing默认为false(貌似是hotspot内部用来压测性能用的)，所以下面的条件需要执行
+    // 从这里的代码+AI大概能推演出G1是这么玩的:
+    // G1把Region分成free_list和secondary_free_list。free_list里的Region随时可用，
+    // secondary_free_list里的Region可能还在清理整理中，清理完成才能使用。
+    // (AI说这里是为了提升性能，后续可以再看看 TODO)
+    //
     // If the secondary_free_list is not empty, append it to the
     // free_list. No need to wait for the cleanup operation to finish;
     // the region allocation code will check the secondary_free_list
@@ -4207,20 +4245,28 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
     // set, skip this step so that the region allocation code has to
     // get entries from the secondary_free_list.
     if (!G1StressConcRegionFreeing) {
+      // 如果_secondary_free_list不为空，直接拼接到free_list后面
       append_secondary_free_list_if_not_empty_with_lock();
     }
 
+
+    // 断言先不看
     assert(check_young_list_well_formed(), "young list should be well formed");
     assert(check_heap_region_claim_values(HeapRegion::InitialClaimValue),
            "sanity check");
+
 
     // Don't dynamically change the number of GC threads this early.  A value of
     // 0 is used to indicate serial work.  When parallel work is done,
     // it will be set.
 
     { // Call to jvmpi::post_class_unload_events must occur outside of active GC
+
+      // 这个里面设置了heap->_is_gc_active = true，即当前正在进行gc
       IsGCActiveMark x;
 
+
+      // 这里的false表示不是FGC
       gc_prologue(false);
       increment_total_collections(false /* full gc */);
       increment_gc_time_stamp();

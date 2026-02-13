@@ -178,6 +178,10 @@ int AdaptiveSizePolicy::calc_default_active_workers(uintx total_workers,
   return new_active_workers;
 }
 
+
+
+
+// 由于UseDynamicNumberOfGCThreads默认是false，所以这里认为返回值=total_workers即可
 int AdaptiveSizePolicy::calc_active_workers(uintx total_workers,
                                             uintx active_workers,
                                             uintx application_workers) {
@@ -202,6 +206,9 @@ int AdaptiveSizePolicy::calc_active_workers(uintx total_workers,
   assert(new_active_workers > 0, "Always need at least 1");
   return new_active_workers;
 }
+
+
+
 
 int AdaptiveSizePolicy::calc_active_conc_workers(uintx total_workers,
                                                  uintx active_workers,

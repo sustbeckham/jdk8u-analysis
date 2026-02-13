@@ -165,10 +165,14 @@ public:
   // Insert the given region into the free region list.
   inline void insert_into_free_list(HeapRegion* hr);
 
+
+  // *** 从g1CollectedHeap.hpp而来，如果_secondary_free_list不为空，直接拼接到free_list后面
+  // *** 具体操作在heapRegionSet.cpp，知道有这个事儿就行，可以先不细看
   // Insert the given region list into the global free region list.
   void insert_list_into_free_list(FreeRegionList* list) {
     _free_list.add_ordered(list);
   }
+
 
   HeapRegion* allocate_free_region(bool is_old) {
     HeapRegion* hr = _free_list.remove_region(is_old);

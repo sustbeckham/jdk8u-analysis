@@ -1194,10 +1194,14 @@ public:
     _secondary_free_list.add_ordered(list);
   }
 
+
+  // 如果_secondary_free_list不为空，直接拼接到free_list后面
   void append_secondary_free_list() {
     _hrm.insert_list_into_free_list(&_secondary_free_list);
   }
 
+
+  // 如果_secondary_free_list不为空，直接拼接到free_list后面
   void append_secondary_free_list_if_not_empty_with_lock() {
     // If the secondary free list looks empty there's no reason to
     // take the lock and then try to append it.
@@ -1206,6 +1210,7 @@ public:
       append_secondary_free_list();
     }
   }
+
 
   inline void old_set_remove(HeapRegion* hr);
 
