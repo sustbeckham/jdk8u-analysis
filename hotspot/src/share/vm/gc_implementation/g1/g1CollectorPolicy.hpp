@@ -875,9 +875,12 @@ public:
   bool gcs_are_young() {
     return _gcs_are_young;
   }
+
+
   void set_gcs_are_young(bool gcs_are_young) {
     _gcs_are_young = gcs_are_young;
   }
+
 
   bool adaptive_young_list_length() {
     return _young_gen_sizer->adaptive_young_list_length();

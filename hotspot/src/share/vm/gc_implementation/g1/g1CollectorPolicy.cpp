@@ -1658,18 +1658,28 @@ G1CollectorPolicy::decide_on_conc_mark_initiation() {
   assert(!during_initial_mark_pause(), "pre-condition");
 
 
+  // [猜测]每次GC结束后，会调用record_collection_pause_end，内部会又将这个_initiate_conc_mark_if_possible设置为true
+  // 所以这里就认为这里是true就好了
   if (initiate_conc_mark_if_possible()) {
     // We had noticed on a previous pause that the heap occupancy has
     // gone over the initiating threshold and we should start a
     // concurrent marking cycle. So we might initiate one.
 
+
+    // cmThread(): 并发标记线程(concurrentMarkThread.hpp)
+    // 我在during_cycle()里有详细的注释，emm再看看(看来这里大概率还是false)
     bool during_cycle = _g1->concurrent_mark()->cmThread()->during_cycle();
     if (!during_cycle) {
       // The concurrent marking thread is not "during a cycle", i.e.,
       // it has completed the last one. So we can go ahead and
       // initiate a new cycle.
 
+
+      // 设置变量_during_initial_mark_pause为true
       set_during_initial_mark_pause();
+
+
+      // 这里是真的没看懂...TODO
       // We do not allow mixed GCs during marking.
       if (!gcs_are_young()) {
         set_gcs_are_young(true);
@@ -1678,9 +1688,13 @@ G1CollectorPolicy::decide_on_conc_mark_initiation() {
                       ergo_format_reason("concurrent cycle is about to start"));
       }
 
+
+      // [猜测]每次GC结束后，会调用record_collection_pause_end，内部会又将这个_initiate_conc_mark_if_possible设置为true
+      // 这里看起来用于初始化初始标记的变量，上面已经设置好了，这个_initiate_conc_mark_if_possible就没用了，设置成false
       // And we can now clear initiate_conc_mark_if_possible() as
       // we've already acted on it.
       clear_initiate_conc_mark_if_possible();
+
 
       ergo_verbose0(ErgoConcCycles,
                   "initiate concurrent cycle",

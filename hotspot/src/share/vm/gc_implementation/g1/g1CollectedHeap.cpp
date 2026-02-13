@@ -2462,6 +2462,7 @@ void G1CollectedHeap::allocate_dummy_regions() {
 
 
 
+// 记录并发标记次数
 void G1CollectedHeap::increment_old_marking_cycles_started() {
   assert(_old_marking_cycles_started == _old_marking_cycles_completed ||
     _old_marking_cycles_started == _old_marking_cycles_completed + 1,
@@ -2470,6 +2471,9 @@ void G1CollectedHeap::increment_old_marking_cycles_started() {
 
   _old_marking_cycles_started++;
 }
+
+
+
 
 void G1CollectedHeap::increment_old_marking_cycles_completed(bool concurrent) {
   MonitorLockerEx x(FullGCCount_lock, Mutex::_no_safepoint_check_flag);
@@ -2519,6 +2523,9 @@ void G1CollectedHeap::increment_old_marking_cycles_completed(bool concurrent) {
   FullGCCount_lock->notify_all();
 }
 
+
+
+
 void G1CollectedHeap::register_concurrent_cycle_start(const Ticks& start_time) {
   _concurrent_cycle_started = true;
   _gc_timer_cm->register_gc_start(start_time);
@@ -2526,6 +2533,9 @@ void G1CollectedHeap::register_concurrent_cycle_start(const Ticks& start_time) {
   _gc_tracer_cm->report_gc_start(gc_cause(), _gc_timer_cm->gc_start());
   trace_heap_before_gc(_gc_tracer_cm);
 }
+
+
+
 
 void G1CollectedHeap::register_concurrent_cycle_end() {
   if (_concurrent_cycle_started) {
@@ -3761,6 +3771,9 @@ HeapWord* G1CollectedHeap::do_collection_pause(size_t word_size,
   return result;
 }
 
+
+
+
 void
 G1CollectedHeap::doConcurrentMark() {
   MutexLockerEx x(CGC_lock, Mutex::_no_safepoint_check_flag);
@@ -3769,6 +3782,9 @@ G1CollectedHeap::doConcurrentMark() {
     CGC_lock->notify();
   }
 }
+
+
+
 
 size_t G1CollectedHeap::pending_card_num() {
   size_t extra_cards = 0;
@@ -4114,39 +4130,57 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
   verify_dirty_young_regions();
 
 
+  // 这里就认为是为了设置变量_during_initial_mark_pause为true就好，这个是初始标记阶段的变量
   // This call will decide whether this pause is an initial-mark
   // pause. If it is, during_initial_mark_pause() will return true
   // for the duration of this pause.
   g1_policy()->decide_on_conc_mark_initiation();
 
 
+  // 注释翻译：JVM 有个硬性规矩 —— 不能把 “并发标记的初始标记阶段”，借着 “混合GC执行的机会” 顺带一起做，必须让这两个操作分开来，不能混在一起。
   // We do not allow initial-mark to be piggy-backed on a mixed GC.
   assert(!g1_policy()->during_initial_mark_pause() ||
           g1_policy()->gcs_are_young(), "sanity");
 
+
+  // 意思和上面差不多
   // We also do not allow mixed GCs during marking.
   assert(!mark_in_progress() || g1_policy()->gcs_are_young(), "sanity");
 
+
+  // 这里在上面有说明，正常情况下这里应该就是true了，意为可以开始并发标记(其它场景我们可以回头再看)
   // Record whether this pause is an initial mark. When the current
   // thread has completed its logging output and it's safe to signal
   // the CM thread, the flag's value in the policy has been reset.
   bool should_start_conc_mark = g1_policy()->during_initial_mark_pause();
 
+
   // Inner scope for scope based logging, timers, and stats collection
   {
     EvacuationInfo evacuation_info;
 
+
+    // 同上，这里先暂时认为是true就好，其它场景再说
     if (g1_policy()->during_initial_mark_pause()) {
       // We are about to start a marking cycle, so we increment the
       // full collection counter.
+      // 记录并发标记次数
       increment_old_marking_cycles_started();
+
+
+      // 监控相关的逻辑先跳过
       register_concurrent_cycle_start(_gc_timer_stw->gc_start());
     }
 
+
+    // 监控相关的逻辑先跳过
     _gc_tracer_stw->report_yc_type(yc_type());
+
 
     TraceCPUTime tcpu(G1Log::finer(), true, gclog_or_tty);
 
+
+    // number_of_non_daemon_threads是总的守护线程个数，随着java程序的变动这个值会变动。
     uint active_workers = AdaptiveSizePolicy::calc_active_workers(workers()->total_workers(),
                                                                   workers()->active_workers(),
                                                                   Threads::number_of_non_daemon_threads());
@@ -4517,6 +4551,8 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
     _gc_timer_stw->register_gc_end();
     _gc_tracer_stw->report_gc_end(_gc_timer_stw->gc_end(), _gc_timer_stw->time_partitions());
   }
+
+
   // It should now be safe to tell the concurrent mark thread to start
   // without its logging output interfering with the logging output
   // that came from the pause.
@@ -4529,6 +4565,9 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
     // running. Note: of course, the actual marking work will
     // not start until the safepoint itself is released in
     // SuspendibleThreadSet::desynchronize().
+    //
+    // [猜测]先不考虑should_start_conc_mark这个的设置逻辑，先假设就为true
+    // *** 上面的逻辑，GC已经结束，此时调用doConcurrentMark，重新开始并发标记过程
     doConcurrentMark();
   }
 

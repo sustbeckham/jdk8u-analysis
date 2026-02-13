@@ -71,7 +71,11 @@ class ConcurrentMarkThread: public ConcurrentGCThread {
 
   ConcurrentMark* cm()     { return _cm; }
 
+
+  // 唯一设置实际是在[上一次]GC结束后的doConcurrentMark函数
   void set_started()       { assert(!_in_progress, "cycle in progress"); _started = true;  }
+
+
   void clear_started()     { assert(_in_progress, "must be starting a cycle"); _started = false; }
   bool started()           { return _started;  }
 
@@ -79,6 +83,16 @@ class ConcurrentMarkThread: public ConcurrentGCThread {
   void clear_in_progress() { assert(!_started, "must not be starting a new cycle"); _in_progress = false; }
   bool in_progress()       { return _in_progress;  }
 
+
+  // 大白话的翻译:  这个标记位flag从"标记流程启动"那一刻开始就返回true——具体是“初始标记暂停阶段”（initial-mark pause），
+  // 也就是started()被设为true的时候；一直到“整个标记流程结束”才变回false——具体是“下一个标记位图bitmap刚清空、且in_progress()被设为false”之后。
+  // 只要这个标记位是true，我们就不会启动新的标记流程，避免多个流程“撞车”（重叠执行）。
+  // 我们不能只靠in_progress()来判断，因为CM线程(并发标记线程)可能要等一会儿才醒过来，
+  // 它得先发现started()被设为true，才会去设in_progress()，这中间有时间差。
+  //
+  // *** started唯一设置的地方是[上一次]GC结束后的doConcurrentMark函数，取消是在ConcurrentMarkThread::run里
+  // *** _in_progress唯一设置的地方是ConcurrentMarkThread::run里，取消是在G1CollectedHeap::increment_old_marking_cycles_completed
+  //
   // This flag returns true from the moment a marking cycle is
   // initiated (during the initial-mark pause when started() is set)
   // to the moment when the cycle completes (just after the next
@@ -88,6 +102,7 @@ class ConcurrentMarkThread: public ConcurrentGCThread {
   // as the CM thread might take some time to wake up before noticing
   // that started() is set and set in_progress().
   bool during_cycle()      { return started() || in_progress(); }
+
 
   // shutdown
   void stop();

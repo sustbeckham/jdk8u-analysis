@@ -27,6 +27,7 @@
 
 #include "memory/allocation.hpp"
 
+
 class EvacuationInfo : public StackObj {
   uint _collectionset_regions;
   uint _allocation_regions;

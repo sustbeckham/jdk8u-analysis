@@ -4104,6 +4104,8 @@ jboolean Threads::is_supported_jni_version(jint version) {
 }
 
 
+
+
 void Threads::add(JavaThread* p, bool force_daemon) {
   // The threads lock must be owned at this point
   assert_locked_or_safepoint(Threads_lock);
@@ -4128,6 +4130,9 @@ void Threads::add(JavaThread* p, bool force_daemon) {
   // Possible GC point.
   Events::log(p, "Thread added: " INTPTR_FORMAT, p);
 }
+
+
+
 
 void Threads::remove(JavaThread* p) {
   // Extra scope needed for Thread_lock, so we can check
