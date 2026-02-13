@@ -27,7 +27,12 @@
 
 #include "memory/gcLocker.hpp"
 
+
+
+
 inline void GC_locker::lock_critical(JavaThread* thread) {
+  // 处理这种情况: 如果当前待进入临界点操作的线程，发现有别的线程已经在临界点但是已经有gc请求在等待，那么当前线程暂时不进入(先hold)
+  // 待前序临界点全部执行完成后+前序的gc完成后，再执行本次临界点进入操作
   if (!thread->in_critical()) {
     if (needs_gc()) {
       // jni_lock call calls enter_critical under the lock so that the
@@ -35,12 +40,21 @@ inline void GC_locker::lock_critical(JavaThread* thread) {
       jni_lock(thread);
       return;
     }
+    // 内部为调试代码不看
     increment_debug_jni_lock_count();
   }
+
+
+  // 当前线程正常进入临界点(后续safepoint环节会将当前线程进入临界区统计到_jni_lock_count中)
   thread->enter_critical();
 }
 
+
+
+
 inline void GC_locker::unlock_critical(JavaThread* thread) {
+
+  // 处理这种情况: 最后一个线程退出临界点，如果有等待执行的GC，本次触发，且唤醒之前可能被wait的线程
   if (thread->in_last_critical()) {
     if (needs_gc()) {
       // jni_unlock call calls exit_critical under the lock so that
@@ -48,8 +62,12 @@ inline void GC_locker::unlock_critical(JavaThread* thread) {
       jni_unlock(thread);
       return;
     }
+    // 内部为调试代码不看
     decrement_debug_jni_lock_count();
   }
+
+
+  // 当前线程正常退出临界点(后续safepoint环节会将当前线程退出临界区统计到_jni_lock_count中)
   thread->exit_critical();
 }
 

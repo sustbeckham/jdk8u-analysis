@@ -150,10 +150,12 @@ public:
     return (_state != _not_synchronized);
   }
 
+
   inline static void increment_jni_active_count() {
     assert_locked_or_safepoint(Safepoint_lock);
     _current_jni_active_count++;
   }
+
 
   // Called when a thread volantary blocks
   static void   block(JavaThread *thread);

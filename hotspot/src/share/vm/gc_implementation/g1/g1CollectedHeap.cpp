@@ -2416,9 +2416,14 @@ size_t G1CollectedHeap::recalculate_used() const {
   return blk.result();
 }
 
+
+
+
 bool G1CollectedHeap::should_do_concurrent_full_gc(GCCause::Cause cause) {
   switch (cause) {
+    // 默认为false
     case GCCause::_gc_locker:               return GCLockerInvokesConcurrent;
+
     case GCCause::_java_lang_system_gc:     return ExplicitGCInvokesConcurrent;
     case GCCause::_g1_humongous_allocation: return true;
     case GCCause::_update_allocation_context_stats_inc: return true;
@@ -2427,6 +2432,10 @@ bool G1CollectedHeap::should_do_concurrent_full_gc(GCCause::Cause cause) {
   }
 }
 
+
+
+
+// 非生产不看
 #ifndef PRODUCT
 void G1CollectedHeap::allocate_dummy_regions() {
   // Let's fill up most of the region
@@ -2449,6 +2458,9 @@ void G1CollectedHeap::allocate_dummy_regions() {
   }
 }
 #endif // !PRODUCT
+
+
+
 
 void G1CollectedHeap::increment_old_marking_cycles_started() {
   assert(_old_marking_cycles_started == _old_marking_cycles_completed ||
@@ -2561,6 +2573,11 @@ G1YCType G1CollectedHeap::yc_type() {
   }
 }
 
+
+
+
+// 执行指定场景的GC
+// *** 比如由于GCLocker延迟的GC，这里的原因就是GCCause::_gc_locker
 void G1CollectedHeap::collect(GCCause::Cause cause) {
   assert_heap_not_locked();
 
@@ -2581,6 +2598,8 @@ void G1CollectedHeap::collect(GCCause::Cause cause) {
       old_marking_count_before = _old_marking_cycles_started;
     }
 
+
+    // GCLocker这个场景下这个值为false
     if (should_do_concurrent_full_gc(cause)) {
       // Schedule an initial-mark evacuation pause that will start a
       // concurrent cycle. We're setting word_size to 0 which means that
@@ -2609,6 +2628,7 @@ void G1CollectedHeap::collect(GCCause::Cause cause) {
         }
       }
     } else if (GC_locker::should_discard(cause, gc_count_before)) {
+      // *** 本质就是对比下GCLocker期间是否已经有别的GC已经发生过了，如果发生过就不再执行本次GC，避免无谓的GC停顿
       // Return to be consistent with VMOp failure due to another
       // collection slipping in after our gc_count but before our
       // request is processed.  _gc_locker collections upgraded by
@@ -2617,7 +2637,8 @@ void G1CollectedHeap::collect(GCCause::Cause cause) {
     } else {
       if (cause == GCCause::_gc_locker || cause == GCCause::_wb_young_gc
           DEBUG_ONLY(|| cause == GCCause::_scavenge_alot)) {
-
+        // *** GCLocker场景下且这期间未发生GC，那就会走到这里触发一次GC，代码进一步的入口在vm_operations_g1.cpp
+        //
         // Schedule a standard evacuation pause. We're setting word_size
         // to 0 which means that we are not requesting a post-GC allocation.
         VM_G1IncCollectionPause op(gc_count_before,
@@ -2625,6 +2646,8 @@ void G1CollectedHeap::collect(GCCause::Cause cause) {
                                    false, /* should_initiate_conc_mark */
                                    g1_policy()->max_pause_time_ms(),
                                    cause);
+
+        // 实际执行操作的doit方法
         VMThread::execute(&op);
       } else {
         // Schedule a Full GC.
@@ -2634,6 +2657,9 @@ void G1CollectedHeap::collect(GCCause::Cause cause) {
     }
   } while (retry_gc);
 }
+
+
+
 
 bool G1CollectedHeap::is_in(const void* p) const {
   if (_hrm.reserved().contains(p)) {
@@ -4050,9 +4076,15 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
   guarantee(!is_gc_active(), "collection is not reentrant");
 
 
+  // 关于GCLocker:
+  // 使用JNI临界区方式操作数组或者字符串时，为了防止GC过程中jarray和jstring产生位移而导致指针时效导致内存错误，所以要保持
+  // 他们在heap中的地址暂时保持不变，于是虚拟机采用了GCLocker的方式临时阻止GC发生，待JNI结束后GC会恢复运行。
+  //
+  // 如果当前存在进入临界区还未释放的线程返回true(顺便会设置_needs_gc标记让GCLocker感知)，否则返回false。
   if (GC_locker::check_active_before_gc()) {
     return false;
   }
+
 
   _gc_timer_stw->register_gc_start();
 

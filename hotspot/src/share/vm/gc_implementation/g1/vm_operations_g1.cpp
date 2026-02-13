@@ -56,6 +56,9 @@ void VM_G1CollectFull::doit() {
   g1h->do_full_collection(false /* clear_all_soft_refs */);
 }
 
+
+
+
 VM_G1IncCollectionPause::VM_G1IncCollectionPause(uint           gc_count_before,
                                                  size_t         word_size,
                                                  bool           should_initiate_conc_mark,
@@ -71,6 +74,9 @@ VM_G1IncCollectionPause::VM_G1IncCollectionPause(uint           gc_count_before,
                     target_pause_time_ms));
   _gc_cause = gc_cause;
 }
+
+
+
 
 bool VM_G1IncCollectionPause::doit_prologue() {
   bool res = VM_G1OperationWithAllocRequest::doit_prologue();
@@ -88,11 +94,17 @@ bool VM_G1IncCollectionPause::doit_prologue() {
   return res;
 }
 
+
+
+
+// *** JNI临界区最终释放后的GCLocker会触发一次延迟的GC，会执行到这里
 void VM_G1IncCollectionPause::doit() {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   assert(!_should_initiate_conc_mark || g1h->should_do_concurrent_full_gc(_gc_cause),
       "only a GC locker, a System.gc(), stats update, whitebox, or a hum allocation induced GC should start a cycle");
 
+
+  // GCLocker产生的延迟GC请求，不会设置word_size
   if (_word_size > 0) {
     // An allocation has been requested. So, try to do that first.
     _result = g1h->attempt_allocation_at_safepoint(_word_size, allocation_context(),
@@ -104,6 +116,7 @@ void VM_G1IncCollectionPause::doit() {
       return;
     }
   }
+
 
   GCCauseSetter x(g1h, _gc_cause);
   if (_should_initiate_conc_mark) {
@@ -161,6 +174,9 @@ void VM_G1IncCollectionPause::doit() {
     }
   }
 }
+
+
+
 
 void VM_G1IncCollectionPause::doit_epilogue() {
   VM_G1OperationWithAllocRequest::doit_epilogue();

@@ -76,6 +76,10 @@ public:
   }
 };
 
+
+
+
+// *** JNI临界区最终释放后的GCLocker会触发一次延迟的GC，会执行到这里
 class VM_G1IncCollectionPause: public VM_G1OperationWithAllocRequest {
 private:
   bool         _should_initiate_conc_mark;
@@ -97,6 +101,9 @@ public:
   }
   bool should_retry_gc() const { return _should_retry_gc; }
 };
+
+
+
 
 // Concurrent GC stop-the-world operations such as remark and cleanup;
 // consider sharing these with CMS's counterparts.

@@ -4255,13 +4255,22 @@ JNI_END
 
 JNI_ENTRY(void*, jni_GetPrimitiveArrayCritical(JNIEnv *env, jarray array, jboolean *isCopy))
   JNIWrapper("GetPrimitiveArrayCritical");
+
+
 #ifndef USDT2
+  // 走这个链路，当前已确认USDT2未定义(DTRACE什么的先不看了, 非核心链路)
   DTRACE_PROBE3(hotspot_jni, GetPrimitiveArrayCritical__entry, env, array, isCopy);
 #else /* USDT2 */
  HOTSPOT_JNI_GETPRIMITIVEARRAYCRITICAL_ENTRY(
                                              env, array, (uintptr_t *) isCopy);
 #endif /* USDT2 */
+
+
+  // 核心只看这句话就好了，代码在gcLocker.inline.hpp，当前线程进入临界区
   GC_locker::lock_critical(thread);
+
+
+  // 获取指定array对应的在虚拟机内部的指针地址(不作为细节来看，GCLocker才是更应该关注的)
   if (isCopy != NULL) {
     *isCopy = JNI_FALSE;
   }
@@ -4274,12 +4283,17 @@ JNI_ENTRY(void*, jni_GetPrimitiveArrayCritical(JNIEnv *env, jarray array, jboole
     type = TypeArrayKlass::cast(a->klass())->element_type();
   }
   void* ret = arrayOop(a)->base(type);
+
+
 #ifndef USDT2
+  // 走这个链路，当前已确认USDT2未定义(DTRACE什么的先不看了, 非核心链路)
   DTRACE_PROBE1(hotspot_jni, GetPrimitiveArrayCritical__return, ret);
 #else /* USDT2 */
  HOTSPOT_JNI_GETPRIMITIVEARRAYCRITICAL_RETURN(
                                               ret);
 #endif /* USDT2 */
+
+
   return ret;
 JNI_END
 
@@ -4294,8 +4308,13 @@ JNI_ENTRY(void, jni_ReleasePrimitiveArrayCritical(JNIEnv *env, jarray array, voi
   HOTSPOT_JNI_RELEASEPRIMITIVEARRAYCRITICAL_ENTRY(
                                                   env, array, carray, mode);
 #endif /* USDT2 */
+
+
+  // 核心只看这句话就好了，代码在gcLocker.inline.hpp，当前线程退出临界区
   // The array, carray and mode arguments are ignored
   GC_locker::unlock_critical(thread);
+
+
 #ifndef USDT2
   DTRACE_PROBE(hotspot_jni, ReleasePrimitiveArrayCritical__return);
 #else /* USDT2 */
@@ -4303,6 +4322,8 @@ HOTSPOT_JNI_RELEASEPRIMITIVEARRAYCRITICAL_RETURN(
 );
 #endif /* USDT2 */
 JNI_END
+
+
 
 
 JNI_ENTRY(const jchar*, jni_GetStringCritical(JNIEnv *env, jstring string, jboolean *isCopy))

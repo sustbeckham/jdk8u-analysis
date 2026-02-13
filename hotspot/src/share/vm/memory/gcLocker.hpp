@@ -60,33 +60,52 @@ class GC_locker: public AllStatic {
   static volatile bool _doing_gc;        // unlock_critical() is doing a GC
   static uint _total_collections;        // value for _gc_locker collection
 
+
+  // 调试代码，可不用看
 #ifdef ASSERT
   // This lock count is updated for all operations and is used to
   // validate the jni_lock_count that is computed during safepoints.
   static volatile jint _debug_jni_lock_count;
 #endif
 
+
+  // 调试代码，可不用看
   // At a safepoint, visit all threads and count the number of active
   // critical sections.  This is used to ensure that all active
   // critical sections are exited before a new one is started.
   static void verify_critical_count() NOT_DEBUG_RETURN;
 
+
   static void jni_lock(JavaThread* thread);
   static void jni_unlock(JavaThread* thread);
 
+
+  // 当前存在进入临界区还未释放的线程数量(_jni_lock_count)
   static bool is_active_internal() {
+    // 调试代码，可不用看
     verify_critical_count();
+
     return _jni_lock_count > 0;
   }
 
+
+
+
  public:
+
+  // 当前存在进入临界区还未释放的线程数量(_jni_lock_count)
   // Accessors
   static bool is_active() {
     assert(SafepointSynchronize::is_at_safepoint(), "only read at safepoint");
     return is_active_internal();
   }
+
+
+  // 是否有GC请求已经触达
   static bool needs_gc()       { return _needs_gc;                        }
 
+
+  // 当前存在进入临界区还未释放的线程数量，同时已经有GC请求触达(此时本次GC会被忽略)
   // Shorthand
   static bool is_active_and_needs_gc() {
     // Use is_active_internal since _needs_gc can change from true to
@@ -95,6 +114,8 @@ class GC_locker: public AllStatic {
     return needs_gc() && is_active_internal();
   }
 
+
+  // 调试代码，不做关注
   // In debug mode track the locking state at all times
   static void increment_debug_jni_lock_count() {
 #ifdef ASSERT
@@ -102,12 +123,18 @@ class GC_locker: public AllStatic {
     Atomic::inc(&_debug_jni_lock_count);
 #endif
   }
+
+
+  // 调试代码，不做关注
   static void decrement_debug_jni_lock_count() {
 #ifdef ASSERT
     assert(_debug_jni_lock_count > 0, "bad value");
     Atomic::dec(&_debug_jni_lock_count);
 #endif
   }
+
+
+
 
   // Set the current lock count
   static void set_jni_lock_count(int count) {
@@ -170,6 +197,8 @@ class GC_locker: public AllStatic {
 
   static address needs_gc_address() { return (address) &_needs_gc; }
 };
+
+
 
 
 // A No_GC_Verifier object can be placed in methods where one assumes that

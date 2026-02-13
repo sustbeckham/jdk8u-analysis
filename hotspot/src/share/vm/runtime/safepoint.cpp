@@ -95,6 +95,9 @@ static volatile int PageArmed = 0 ;        // safepoint polling page is RO|RW vs
 static volatile int TryingToBlock = 0 ;    // proximate value -- for advisory use only
 static bool timeout_error_printed = false;
 
+
+
+
 // Roll all threads forward to a safepoint and suspend them all
 void SafepointSynchronize::begin() {
 
@@ -229,6 +232,7 @@ void SafepointSynchronize::begin() {
       assert(!cur->is_ConcurrentGC_thread(), "A concurrent GC thread is unexpectly being suspended");
       ThreadSafepointState *cur_state = cur->safepoint_state();
       if (cur_state->is_running()) {
+        // 这里会检查当前线程是否在临界区，如果在的话汇总临界区线程个数
         cur_state->examine_state_of_thread();
         if (!cur_state->is_running()) {
            still_running--;
@@ -374,6 +378,8 @@ void SafepointSynchronize::begin() {
 
   OrderAccess::fence();
 
+
+  // 调试代码暂不关心
 #ifdef ASSERT
   for (JavaThread *cur = Threads::first(); cur != NULL; cur = cur->next()) {
     // make sure all the threads were visited
@@ -381,8 +387,11 @@ void SafepointSynchronize::begin() {
   }
 #endif // ASSERT
 
+
+  // 上面的函数examine_state_of_thread已经汇总了临界区内线程数量到_current_jni_active_count，这里直接赋值
   // Update the count of active JNI critical regions
   GC_locker::set_jni_lock_count(_current_jni_active_count);
+
 
   if (TraceSafepoint) {
     VM_Operation *op = VMThread::vm_operation();

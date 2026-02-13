@@ -1407,12 +1407,22 @@ class JavaThread: public Thread {
   }
 
   // JNI critical regions. These can nest.
+
+  // 当前线程是否在临界区(由于临界区可嵌套所以_jni_active_critical可能会持续累加)。
   bool in_critical()    { return _jni_active_critical > 0; }
+
+
+  // 当前线程是否在临界区嵌套的最外层
   bool in_last_critical()  { return _jni_active_critical == 1; }
+
+
+  // 进入临界区，_jni_active_critical标志着已经进入临界区的线程数量
   void enter_critical() { assert(Thread::current() == this ||
                                  Thread::current()->is_VM_thread() && SafepointSynchronize::is_synchronizing(),
                                  "this must be current thread or synchronizing");
                           _jni_active_critical++; }
+
+
   void exit_critical()  { assert(Thread::current() == this,
                                  "this must be current thread");
                           _jni_active_critical--;
