@@ -31,6 +31,7 @@
 #include "runtime/mutex.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/orderAccess.inline.hpp"
+#include "utilities/ostream.hpp"
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
@@ -394,6 +395,8 @@ GCTaskManager::GCTaskManager(uint workers, NotifyDoneClosure* ndc) :
 }
 
 void GCTaskManager::initialize() {
+  tty->printStackTrace();
+
   if (TraceGCTaskManager) {
     tty->print_cr("GCTaskManager::initialize: workers: %u", workers());
   }

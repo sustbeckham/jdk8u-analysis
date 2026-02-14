@@ -1184,8 +1184,6 @@ void ReferenceProcessor::verify_referent(oop obj) {
 //
 // *** 引用发现
 bool ReferenceProcessor::discover_reference(oop obj, ReferenceType rt) {
-  tty->printStackTrace();
-
   // Make sure we are discovering refs (rather than processing discovered refs).
   if (!_discovering_refs || !RegisterReferences) {
     return false;
