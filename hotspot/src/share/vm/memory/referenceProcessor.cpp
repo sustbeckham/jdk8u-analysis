@@ -34,6 +34,7 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/java.hpp"
 #include "runtime/jniHandles.hpp"
+#include "utilities/ostream.hpp"
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
@@ -90,6 +91,9 @@ void ReferenceProcessor::enable_discovery(bool verify_disabled, bool check_no_re
   _discovering_refs = true;
 }
 
+
+
+
 ReferenceProcessor::ReferenceProcessor(MemRegion span,
                                        bool      mt_processing,
                                        uint      mt_processing_degree,
@@ -108,17 +112,36 @@ ReferenceProcessor::ReferenceProcessor(MemRegion span,
   _discovery_is_mt     = mt_discovery;
   _num_q               = MAX2(1U, mt_processing_degree);
   _max_num_q           = MAX2(_num_q, mt_discovery_degree);
+
+
+   // 上面的_max_num_q在暂时记住在八核下默认为8即可
   _discovered_refs     = NEW_C_HEAP_ARRAY(DiscoveredList,
             _max_num_q * number_of_subclasses_of_ref(), mtGC);
 
   if (_discovered_refs == NULL) {
     vm_exit_during_initialization("Could not allocated RefProc Array");
   }
+
+
+  // 考虑_discovered_refs是一块连续的大数组:
+  //        ┌─────────────┬─────────────┬─────────────┬─────────────┬─────────────┐
+  //        │    Soft     │     Weak    │    Final    │   Phantom   │   Cleaner   │
+  //        └─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+  //        |             |             |             |             |
+  // _discoveredSoftRefs  |     _discoveredFinalRefs  |   _discoveredCleanerRefs
+  //                      |                           |
+  //             _discoveredWeakRefs        _discoveredPhantomRefs
+  //
+  // 虚拟机初始化时候分成五段，下面5个refs字段分别指向每一段的开头
+
+
+  // 注意这个引用是前后依赖关系
   _discoveredSoftRefs    = &_discovered_refs[0];
   _discoveredWeakRefs    = &_discoveredSoftRefs[_max_num_q];
   _discoveredFinalRefs   = &_discoveredWeakRefs[_max_num_q];
   _discoveredPhantomRefs = &_discoveredFinalRefs[_max_num_q];
   _discoveredCleanerRefs = &_discoveredPhantomRefs[_max_num_q];
+
 
   // Initialize all entries to NULL
   for (uint i = 0; i < _max_num_q * number_of_subclasses_of_ref(); i++) {
@@ -129,6 +152,10 @@ ReferenceProcessor::ReferenceProcessor(MemRegion span,
   setup_policy(false /* default soft ref policy */);
 }
 
+
+
+
+// 调试相关的忽略
 #ifndef PRODUCT
 void ReferenceProcessor::verify_no_references_recorded() {
   guarantee(!_discovering_refs, "Discovering refs?");
@@ -138,6 +165,9 @@ void ReferenceProcessor::verify_no_references_recorded() {
   }
 }
 #endif
+
+
+
 
 void ReferenceProcessor::weak_oops_do(OopClosure* f) {
   for (uint i = 0; i < _max_num_q * number_of_subclasses_of_ref(); i++) {
@@ -471,6 +501,9 @@ void ReferenceProcessor::enqueue_discovered_reflists(HeapWord* pending_list_addr
   }
 }
 
+
+
+
 void DiscoveredListIterator::load_ptrs(DEBUG_ONLY(bool allow_null_referent)) {
   _discovered_addr = java_lang_ref_Reference::discovered_addr(_ref);
   oop discovered = java_lang_ref_Reference::discovered(_ref);
@@ -479,6 +512,8 @@ void DiscoveredListIterator::load_ptrs(DEBUG_ONLY(bool allow_null_referent)) {
   _next = discovered;
   _referent_addr = java_lang_ref_Reference::referent_addr(_ref);
   _referent = java_lang_ref_Reference::referent(_ref);
+
+
   assert(Universe::heap()->is_in_reserved_or_null(_referent),
          "Wrong oop found in java.lang.Reference object");
   assert(allow_null_referent ?
@@ -486,6 +521,9 @@ void DiscoveredListIterator::load_ptrs(DEBUG_ONLY(bool allow_null_referent)) {
            : _referent->is_oop(),
          "bad referent");
 }
+
+
+
 
 void DiscoveredListIterator::remove() {
   assert(_ref->is_oop(), "Dropping a bad reference");
@@ -1059,6 +1097,9 @@ inline DiscoveredList* ReferenceProcessor::get_discovered_list(ReferenceType rt)
   return list;
 }
 
+
+
+
 inline void
 ReferenceProcessor::add_to_discovered_list_mt(DiscoveredList& refs_list,
                                               oop             obj,
@@ -1093,6 +1134,10 @@ ReferenceProcessor::add_to_discovered_list_mt(DiscoveredList& refs_list,
   }
 }
 
+
+
+
+// 非生产逻辑不看
 #ifndef PRODUCT
 // Non-atomic (i.e. concurrent) discovery might allow us
 // to observe j.l.References with NULL referents, being those
@@ -1106,6 +1151,9 @@ void ReferenceProcessor::verify_referent(oop obj) {
                  (void *)referent, (void *)obj, da ? "" : "non-"));
 }
 #endif
+
+
+
 
 // We mention two of several possible choices here:
 // #0: if the reference object is not in the "originating generation"
@@ -1133,7 +1181,11 @@ void ReferenceProcessor::verify_referent(oop obj) {
 //     might Policy #0 above, but at marginally increased cost
 //     and complexity in processing these references.
 //     We call this choice the "RefeferentBasedDiscovery" policy.
+//
+// *** 引用发现
 bool ReferenceProcessor::discover_reference(oop obj, ReferenceType rt) {
+  tty->printStackTrace();
+
   // Make sure we are discovering refs (rather than processing discovered refs).
   if (!_discovering_refs || !RegisterReferences) {
     return false;
@@ -1185,12 +1237,15 @@ bool ReferenceProcessor::discover_reference(oop obj, ReferenceType rt) {
       gclog_or_tty->print_cr("Already discovered reference (" INTPTR_FORMAT ": %s)",
                              (void *)obj, obj->klass()->internal_name());
     }
+
+    // RefDiscoveryPolicy默认为0. ReferentBasedDiscovery是枚举，值为1。
     if (RefDiscoveryPolicy == ReferentBasedDiscovery) {
       // assumes that an object is not processed twice;
       // if it's been already discovered it must be on another
       // generation's discovered list; so we won't discover it.
       return false;
     } else {
+      // 所以走这个分支
       assert(RefDiscoveryPolicy == ReferenceBasedDiscovery,
              "Unrecognized policy");
       // Check assumption that an object is not potentially
@@ -1248,6 +1303,9 @@ bool ReferenceProcessor::discover_reference(oop obj, ReferenceType rt) {
   verify_referent(obj);
   return true;
 }
+
+
+
 
 // Preclean the discovered references by removing those
 // whose referents are alive, and by marking from those that
@@ -1348,12 +1406,16 @@ ReferenceProcessor::preclean_discovered_reflist(DiscoveredList&    refs_list,
     oop next = java_lang_ref_Reference::next(obj);
     if (iter.referent() == NULL || iter.is_referent_alive() ||
         next != NULL) {
+
+      // 默认情况下TraceReferenceGC不开启
       // The referent has been cleared, or is alive, or the Reference is not
       // active; we need to trace and mark its cohort.
       if (TraceReferenceGC) {
         gclog_or_tty->print_cr("Precleaning Reference (" INTPTR_FORMAT ": %s)",
                                (void *)iter.obj(), iter.obj()->klass()->internal_name());
       }
+
+
       // Remove Reference object from list
       iter.remove();
       // Keep alive its cohort.
@@ -1381,6 +1443,9 @@ ReferenceProcessor::preclean_discovered_reflist(DiscoveredList&    refs_list,
     }
   )
 }
+
+
+
 
 const char* ReferenceProcessor::list_name(uint i) {
    assert(i >= 0 && i <= _max_num_q * number_of_subclasses_of_ref(),

@@ -29,6 +29,8 @@
 
 // ReferenceType is used to distinguish between java/lang/ref/Reference subclasses
 
+
+// JVM层面定义的引用类型
 enum ReferenceType {
   REF_NONE,      // Regular class
   REF_OTHER,     // Subclass of java/lang/ref/Reference, but not subclass of one of the classes below

@@ -536,11 +536,15 @@ inline void oop_store_raw(HeapWord* addr, oop value) {
   }
 }
 
+
+
+
 inline oop oopDesc::atomic_compare_exchange_oop(oop exchange_value,
                                                 volatile HeapWord *dest,
                                                 oop compare_value,
                                                 bool prebarrier) {
   if (UseCompressedOops) {
+    // 默认走这个分支
     if (prebarrier) {
       update_barrier_set_pre((narrowOop*)dest, exchange_value);
     }
@@ -558,6 +562,9 @@ inline oop oopDesc::atomic_compare_exchange_oop(oop exchange_value,
     return (oop)Atomic::cmpxchg_ptr(exchange_value, (oop*)dest, compare_value);
   }
 }
+
+
+
 
 // Used only for markSweep, scavenging
 inline bool oopDesc::is_gc_marked() const {

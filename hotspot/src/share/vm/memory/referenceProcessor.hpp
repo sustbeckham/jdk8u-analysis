@@ -54,6 +54,10 @@ class GCTimer;
 class ReferencePolicy;
 class AbstractRefProcTaskExecutor;
 
+
+
+
+// DiscoveredList是一个极为简单的数据结构，它只管理头指针，链表的串联使用java.lang.ref.Reference#discovered来完成
 // List of discovered references.
 class DiscoveredList {
 public:
@@ -86,6 +90,9 @@ private:
   narrowOop _compressed_head;
   size_t _len;
 };
+
+
+
 
 // Iterator for the list of discovered references.
 class DiscoveredListIterator {
@@ -208,6 +215,9 @@ public:
   }
 };
 
+
+
+
 class ReferenceProcessor : public CHeapObj<mtGC> {
 
  private:
@@ -256,9 +266,13 @@ class ReferenceProcessor : public CHeapObj<mtGC> {
   // The maximum MT'ness degree of the queues below
   uint             _max_num_q;
 
+
+  // 这里应该是实际存引用的地方
   // Master array of discovered oops
   DiscoveredList* _discovered_refs;
 
+
+  // 这里应该只是指向_discovered_refs的列表，并不实际存储数据
   // Arrays of lists of oops, one per thread (pointers into master array above)
   DiscoveredList* _discoveredSoftRefs;
   DiscoveredList* _discoveredWeakRefs;
@@ -266,8 +280,12 @@ class ReferenceProcessor : public CHeapObj<mtGC> {
   DiscoveredList* _discoveredPhantomRefs;
   DiscoveredList* _discoveredCleanerRefs;
 
+
  public:
+
+  // 引用枚举定义在referenceType.hpp，这里返回6，即6种引用类型
   static int number_of_subclasses_of_ref() { return (REF_CLEANER - REF_OTHER); }
+
 
   uint num_q()                             { return _num_q; }
   uint max_num_q()                         { return _max_num_q; }

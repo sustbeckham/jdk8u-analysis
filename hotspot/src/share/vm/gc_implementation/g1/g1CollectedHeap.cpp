@@ -2242,6 +2242,10 @@ size_t G1CollectedHeap::conservative_max_heap_alignment() {
   return HeapRegion::max_region_size();
 }
 
+
+
+
+// 应该从sharedHeap.cpp初始化而来
 void G1CollectedHeap::ref_processing_init() {
   // Reference processing in G1 currently works as follows:
   //
@@ -2278,8 +2282,25 @@ void G1CollectedHeap::ref_processing_init() {
   //     * Discovery is atomic - i.e. not concurrent.
   //     * Reference discovery will not need a barrier.
 
+
+  // 内部是个空实现，忽略好了
   SharedHeap::ref_processing_init();
+
+
+  // [猜测]整堆
   MemRegion mr = reserved_region();
+
+
+  // 先来看看ReferenceProcessor构造器中参数的依次含义:
+  //   MemRegion span,                           覆盖的内存区域。这里2个processor都用了整堆
+  //   bool mt_processing,                       是否使用多线程处理引用。这里由于ParallelRefProcEnabled默认是false，所以2个processor这个参数都是false
+  //   uint mt_processing_degree,                处理引用的线程数量
+  //   bool mt_discovery,                        是否多线程发现引用，多核下这里2个processor都是true
+  //   uint mt_discovery_degree,                 多线程发现引用的线程数量
+  //   bool atomic_discovery,                    引用发现是否原子化，并发标记false，引用处理true，这是个比较大的差异
+  //   BoolObjectClosure* is_alive_non_header    判断对象是否存活的闭包(G1CMIsAliveClosure & G1STWIsAliveClosure)，这也是个比较大的差异
+  //
+  // 进一步的_ref_processor_cm用来处理并发标记阶段发现的引用，_ref_processor_stw用来处理STW暂停阶段发现的引用，参数略作差异化用来适配不同的场景。
 
   // Concurrent Mark ref processor
   _ref_processor_cm =
@@ -2315,6 +2336,9 @@ void G1CollectedHeap::ref_processing_init() {
                                 // is alive closure
                                 // (for efficiency/performance)
 }
+
+
+
 
 size_t G1CollectedHeap::capacity() const {
   return _hrm.length() * HeapRegion::GrainBytes;
@@ -2357,6 +2381,9 @@ public:
 
   bool failures() { return _failures; }
 };
+
+
+
 
 void G1CollectedHeap::check_gc_time_stamps() {
   CheckGCTimeStampsHRClosure cl(_gc_time_stamp);
@@ -4324,6 +4351,7 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         // CM ref processor, if necessary, and turn it back on
         // on again later if we do. Using a scoped
         // NoRefDiscovery object will do this.
+        // *** ref_processor_cm()返回的是ReferenceProcessor对象
         NoRefDiscovery no_cm_discovery(ref_processor_cm());
 
         // Forget the current alloc region (we might even choose it to be part
