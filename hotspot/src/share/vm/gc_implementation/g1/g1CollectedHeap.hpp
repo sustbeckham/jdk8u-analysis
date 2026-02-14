@@ -1430,6 +1430,8 @@ public:
   size_t max_tlab_size() const;
   size_t unsafe_max_tlab_alloc(Thread* ignored) const;
 
+
+  // *** 是否隐藏TLAB内的内存屏障
   // Can a compiler initialize a new object without store barriers?
   // This permission only extends from the creation of a new object
   // via a TLAB up to the first subsequent safepoint. If such permission
@@ -1446,6 +1448,7 @@ public:
   virtual bool can_elide_tlab_store_barriers() const {
     return true;
   }
+
 
   virtual bool card_mark_must_follow_store() const {
     return true;

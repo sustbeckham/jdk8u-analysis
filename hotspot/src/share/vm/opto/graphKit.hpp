@@ -45,6 +45,15 @@ class LibraryCallKit;
 class Parse;
 class RootNode;
 
+// GraphKit不是指什么图形化工具，而是C2编译器中的关键组件！它是编译器的核心部分，用于构建和操作程序代码的中间表示(IR)图!!!
+// 核心功能如下:
+// *** 控制流图(CFG)构建
+//     *** 将Java字节码转换为节点(Node)和边(Edge)组成的图结构
+// *** 优化基础框架
+//     *** 为编译优化如死代码删除，常量传播，循环展开等提供底层支持
+//     *** 通过图结构的变换实现高效优化，例如合并冗余节点
+// *** 将优化的IR图转换为机器码(如x86指令)
+
 //-----------------------------------------------------------------------------
 //----------------------------GraphKit-----------------------------------------
 // Toolkit for building the common sorts of subgraphs.
@@ -755,10 +764,15 @@ class GraphKit : public Phase {
   // Returns the object (if any) which was created the moment before.
   Node* just_allocated_object(Node* current_control);
 
+
+  // 这里默认认为返回true就好。
+  // 允许编译器省略TLAB内新对象初始化阶段的写内存屏障操作。因为新对象仅对当前线程可见，此时不存在别的线程能看到当前对象的场景。
+  // 这个做法可以减少对象分配是的开销(省去了内存屏障的操作)，提升了整体的对象创建效率。
   static bool use_ReduceInitialCardMarks() {
     return (ReduceInitialCardMarks
             && Universe::heap()->can_elide_tlab_store_barriers());
   }
+
 
   // Sync Ideal and Graph kits.
   void sync_kit(IdealKit& ideal);

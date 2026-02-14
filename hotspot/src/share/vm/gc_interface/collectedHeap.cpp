@@ -194,7 +194,7 @@ CollectedHeap::CollectedHeap() : _n_par_threads(0)
   }
 
 
-  // 这个在后续的pre_initialize()有初始化, 没懂...
+  // 源码里的注释说，这个字段是为了ReduceInitialCardMarks服务的
   _defer_initial_card_mark = false; // strengthened by subclass in pre_initialize() below.
 
 
@@ -243,6 +243,11 @@ void CollectedHeap::pre_initialize() {
   // Used for ReduceInitialCardMarks (when COMPILER2 is used);
   // otherwise remains unused.
 #ifdef COMPILER2
+  // [看如下的分析，先暂时认为这个值为true就好]
+  // ReduceInitialCardMarks默认为true
+  // G1下can_elide_tlab_store_barriers默认返回是true
+  // DeferInitialCardMark默认为false
+  // G1下card_mark_must_follow_store默认返回是true(这个参数的意思暂时不太懂)
   _defer_initial_card_mark =    ReduceInitialCardMarks && can_elide_tlab_store_barriers()
                              && (DeferInitialCardMark || card_mark_must_follow_store());
 #else
@@ -336,6 +341,9 @@ HeapWord* CollectedHeap::allocate_from_tlab_slow(KlassHandle klass, Thread* thre
   return obj;
 }
 
+
+
+
 void CollectedHeap::flush_deferred_store_barrier(JavaThread* thread) {
   MemRegion deferred = thread->deferred_card_mark();
   if (!deferred.is_empty()) {
@@ -350,14 +358,22 @@ void CollectedHeap::flush_deferred_store_barrier(JavaThread* thread) {
       assert(deferred.word_size() == (size_t)(old_obj->size()),
              "Mismatch: multiple objects?");
     }
+    // 简化一点，上面的都可以先不看
+
+
     BarrierSet* bs = barrier_set();
     assert(bs->has_write_region_opt(), "No write_region() on BarrierSet");
     bs->write_region(deferred);
     // "Clear" the deferred_card_mark field
     thread->set_deferred_card_mark(MemRegion());
   }
+
+  // 调试的先不看
   assert(thread->deferred_card_mark().is_empty(), "invariant");
 }
+
+
+
 
 size_t CollectedHeap::max_tlab_size() const {
   // TLABs can't be bigger than we can fill with a int[Integer.MAX_VALUE].
@@ -438,6 +454,9 @@ oop CollectedHeap::new_store_pre_barrier(JavaThread* thread, oop new_obj) {
   }
   return new_obj;
 }
+
+
+
 
 size_t CollectedHeap::filler_array_hdr_size() {
   return size_t(align_object_offset(arrayOopDesc::header_size(T_INT))); // align to Long
@@ -532,6 +551,10 @@ HeapWord* CollectedHeap::allocate_new_tlab(size_t size) {
   return NULL;
 }
 
+
+
+
+// 正常G1的垃圾回收，会在gc_prologue方法内部调用次数且retire_tlabs为true
 void CollectedHeap::ensure_parsability(bool retire_tlabs) {
   // The second disjunct in the assertion below makes a concession
   // for the start-up verification done while the VM is being
@@ -546,6 +569,7 @@ void CollectedHeap::ensure_parsability(bool retire_tlabs) {
          "Should only be called at a safepoint or at start-up"
          " otherwise concurrent mutator activity may make heap "
          " unparsable again");
+
   const bool use_tlab = UseTLAB;
   const bool deferred = _defer_initial_card_mark;
   // The main thread starts allocating via a TLAB even before it
@@ -553,6 +577,9 @@ void CollectedHeap::ensure_parsability(bool retire_tlabs) {
   assert(!use_tlab || Threads::first() != NULL,
          "Attempt to fill tlabs before main thread has been added"
          " to threads list is doomed to failure!");
+
+
+  // 遍历所有Java线程
   for (JavaThread *thread = Threads::first(); thread; thread = thread->next()) {
      if (use_tlab) thread->tlab().make_parsable(retire_tlabs);
 #ifdef COMPILER2
@@ -567,7 +594,11 @@ void CollectedHeap::ensure_parsability(bool retire_tlabs) {
   }
 }
 
+
+
+
 void CollectedHeap::accumulate_statistics_all_tlabs() {
+  // 默认TLAB是开的
   if (UseTLAB) {
     assert(SafepointSynchronize::is_at_safepoint() ||
          !is_init_completed(),
@@ -576,6 +607,9 @@ void CollectedHeap::accumulate_statistics_all_tlabs() {
     ThreadLocalAllocBuffer::accumulate_statistics_before_gc();
   }
 }
+
+
+
 
 void CollectedHeap::resize_all_tlabs() {
   if (UseTLAB) {

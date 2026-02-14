@@ -3718,7 +3718,12 @@ void G1CollectedHeap::gc_prologue(bool full /* Ignored */) {
 
 
   // Fill TLAB's and such
+
+  // 数据统计相关的跳过
   accumulate_statistics_all_tlabs();
+
+
+  // 这里有个内存屏障刷新的逻辑有点难懂
   ensure_parsability(true);
 
 
@@ -4266,9 +4271,16 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
       IsGCActiveMark x;
 
 
-      // 这里的false表示不是FGC
+      // *** 这里的false表示不是FGC
+      // *** 这里有个内存屏障刷新的逻辑有点难懂 待细看 TODO
       gc_prologue(false);
+
+
+      // GC数量统计+1
       increment_total_collections(false /* full gc */);
+
+
+      // 内部是个unsigned变量的递增，同时还加了个内存屏障，没太懂 TODO
       increment_gc_time_stamp();
 
 
@@ -4286,10 +4298,13 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
       verify_before_gc();
 
 
+      // 内部的G1VerifyBitmaps默认为false，这里暂时什么也不做
       check_bitmaps("GC Start");
 
 
-      // 这个宏定义在macros.hpp，直接就理解成执行DerivedPointerTable::clear()就好
+      // *** 这个宏定义在macros.hpp，直接就理解成执行DerivedPointerTable::clear()就好
+      // *** clear函数实现在oopMap.cpp
+      // *** 这里的逻辑只是确保派生列表是空就行，具体gc期间列表会更新，gc完成后因为对象会移动，会进一步更新派生指针的地址同时清空列表
       COMPILER2_PRESENT(DerivedPointerTable::clear());
 
 
@@ -4297,9 +4312,12 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
       // G1CollectedHeap::ref_processing_init() to see how
       // reference processing currently works in G1.
 
+
+      // 内部偏断言和校验的逻辑，先忽略
       // Enable discovery in the STW reference processor
       ref_processor_stw()->enable_discovery(true /*verify_disabled*/,
                                             true /*verify_no_refs*/);
+
 
       {
         // We want to temporarily turn off discovery by the
@@ -6374,6 +6392,10 @@ public:
   }
 };
 
+
+
+
+// 默认G1VerifyBitmaps为false，这里暂时什么也不做
 void G1CollectedHeap::check_bitmaps(const char* caller) {
   if (!G1VerifyBitmaps) return;
 
@@ -6381,6 +6403,9 @@ void G1CollectedHeap::check_bitmaps(const char* caller) {
   heap_region_iterate(&cl);
   guarantee(!cl.failures(), "bitmap verification");
 }
+
+
+
 
 class G1CheckCSetFastTableClosure : public HeapRegionClosure {
  private:

@@ -2094,6 +2094,26 @@ void GraphKit::uncommon_trap(int trap_request,
 
 
 //--------------------------just_allocated_object------------------------------
+
+// 方法本意: 判断是否是刚刚创建的方法(内部如果判断控制流发生变化就认为不是新创建的)。
+// 很有意思的代码，跟AI聊了很久才大概明白了点。
+// *** C2编译器会构建IR图。IR图的一个重要行为是构建控制节点，将代码拆成节点分支。
+// *** 所有改变代码执行路径，中断原本的线性操作，都会生成新的控制节点
+//    ### 条件判断(if、三元运算符)
+//    ### 循环(while、for、do-while)
+//    ### switch/case
+//    ### 异常捕获
+//    ### return语句
+//    ### 锁(synchronized、lock、unlock、tryLock...)
+//    ### 线程和并发(sleep、wait、yield、join、cas)
+//    ### JVM级别(jvmti、类加载、初始化、jni)
+//    ### safepoint
+// *** 虚拟机认为，控制节点变化本身就是风险信号，和变化后做什么无关
+// *** 所以下方的代码本质的意思就是控制节点是否发生变化(C->recent_alloc_ctl() == current_control)
+// *** 这里官方注释虽然说是在判断是否有safepoint介入，但其实并不只是safepoint(比如我上面列举的这些)
+// *** 所以这里其实是一种性能相对较好，但是“宁缺毋滥”的方式
+// 综合来看，jvm希望在诸如TLAB分配的场景下不写卡表(或者也可以理解为不写前置的内存屏障), 但是也做了非常多的限制。
+//
 // Report the object that was just allocated.
 // It must be the case that there are no intervening safepoints.
 // We use this to determine if an object is so "fresh" that
@@ -3778,6 +3798,9 @@ void GraphKit::final_sync(IdealKit& ideal) {
   sync_kit(ideal);
 }
 
+
+
+
 // vanilla/CMS post barrier
 // Insert a write-barrier store.  This is to let generational GC work; we have
 // to flag all oop-stores before the next GC point.
@@ -3799,6 +3822,15 @@ void GraphKit::write_barrier_post(Node* oop_store,
       return;
   }
 
+
+  // 关于use_ReduceInitialCardMarks()
+  // *** 这里默认认为返回true就好。
+  // *** 允许编译器省略TLAB内新对象初始化阶段的写内存屏障操作。因为新对象仅对当前线程可见，此时不存在别的线程能看到当前对象的场景。
+  // *** 这个做法可以减少对象分配是的开销(省去了内存屏障的操作)，提升了整体的对象创建效率。
+  // 关于just_allocated_object
+  // *** 判断是否是刚刚创建的方法(内部如果判断控制流发生变化就认为不是新创建的)。
+  //
+  // 所以这里的意思应该是TLAB新创建的对象就不参与后面的内存屏障逻辑了。
   if (use_ReduceInitialCardMarks()
       && obj == just_allocated_object(control())) {
     // We can skip marks on a freshly-allocated object in Eden.
@@ -3808,6 +3840,7 @@ void GraphKit::write_barrier_post(Node* oop_store,
     // elision safe.
     return;
   }
+
 
   if (!use_precise) {
     // All card marks for a (non-array) instance are in one place:
@@ -3861,6 +3894,9 @@ void GraphKit::write_barrier_post(Node* oop_store,
   // Final sync IdealKit and GraphKit.
   final_sync(ideal);
 }
+
+
+
 
 // G1 pre/post barriers
 void GraphKit::g1_write_barrier_pre(bool do_load,

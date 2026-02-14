@@ -554,6 +554,9 @@ void CardTableModRefBS::non_clean_card_iterate_serial(MemRegion mr,
   }
 }
 
+
+
+
 void CardTableModRefBS::dirty_MemRegion(MemRegion mr) {
   assert((HeapWord*)align_size_down((uintptr_t)mr.start(), HeapWordSize) == mr.start(), "Unaligned start");
   assert((HeapWord*)align_size_up  ((uintptr_t)mr.end(),   HeapWordSize) == mr.end(),   "Unaligned end"  );
@@ -564,6 +567,9 @@ void CardTableModRefBS::dirty_MemRegion(MemRegion mr) {
     cur++;
   }
 }
+
+
+
 
 void CardTableModRefBS::invalidate(MemRegion mr, bool whole_heap) {
   assert((HeapWord*)align_size_down((uintptr_t)mr.start(), HeapWordSize) == mr.start(), "Unaligned start");

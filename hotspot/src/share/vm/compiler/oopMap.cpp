@@ -600,6 +600,9 @@ GrowableArray<DerivedPointerEntry*>* DerivedPointerTable::_list = NULL;
 bool DerivedPointerTable::_active = false;
 
 
+
+
+// 这里只是确保派生指针列表为空即可，真正的移除动作在下面的update_pointers函数
 void DerivedPointerTable::clear() {
   // The first time, we create the list.  Otherwise it should be
   // empty.  If not, then we have probably forgotton to call
@@ -607,10 +610,13 @@ void DerivedPointerTable::clear() {
   assert (!_active, "should not be active");
   assert(_list == NULL || _list->length() == 0, "table not empty");
   if (_list == NULL) {
+    // 这里应该是启动后第一次GC新创建list
     _list = new (ResourceObj::C_HEAP, mtCompiler) GrowableArray<DerivedPointerEntry*>(10, true); // Allocated on C heap
   }
   _active = true;
 }
+
+
 
 
 // Returns value of location as an int

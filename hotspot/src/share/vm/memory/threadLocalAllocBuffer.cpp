@@ -45,6 +45,9 @@ void ThreadLocalAllocBuffer::clear_before_allocation() {
   make_parsable(true);   // also retire the TLAB
 }
 
+
+
+
 void ThreadLocalAllocBuffer::accumulate_statistics_before_gc() {
   global_stats()->initialize();
 
@@ -61,6 +64,9 @@ void ThreadLocalAllocBuffer::accumulate_statistics_before_gc() {
     }
   }
 }
+
+
+
 
 void ThreadLocalAllocBuffer::accumulate_statistics() {
   Thread* thread = myThread();

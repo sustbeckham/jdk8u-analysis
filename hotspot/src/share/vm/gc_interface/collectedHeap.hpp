@@ -495,6 +495,8 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   unsigned int total_collections() const { return _total_collections; }
   unsigned int total_full_collections() const { return _total_full_collections;}
 
+
+  // 基于是否FGC新增GC数量
   // Increment total number of GC collections (started)
   // Should be protected but used by PSMarkSweep - cleanup for 1.4.2
   void increment_total_collections(bool full = false) {
@@ -504,7 +506,10 @@ class CollectedHeap : public CHeapObj<mtInternal> {
     }
   }
 
+
+  // 总FGC次数+1
   void increment_total_full_collections() { _total_full_collections++; }
+
 
   // Return the AdaptiveSizePolicy for the heap.
   virtual AdaptiveSizePolicy* size_policy() = 0;

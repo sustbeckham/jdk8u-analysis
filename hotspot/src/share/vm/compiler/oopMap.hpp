@@ -281,6 +281,8 @@ class OopMapStream : public StackObj {
 };
 
 
+
+
 // Derived pointer support. This table keeps track of all derived points on a
 // stack.  It is cleared before each scavenge/GC.  During the traversal of all
 // oops, it is filled in with references to all locations that contains a
