@@ -28,11 +28,17 @@
 #include "runtime/prefetch.hpp"
 
 
+
+
+// AMD64架构下的cpu缓存预取优化，主动加载临接的内存地址，减少后续内存访问延迟
 inline void Prefetch::read (void *loc, intx interval) {
 #ifdef AMD64
   __asm__ ("prefetcht0 (%0,%1,1)" : : "r" (loc), "r" (interval));
 #endif // AMD64
 }
+
+
+
 
 inline void Prefetch::write(void *loc, intx interval) {
 #ifdef AMD64

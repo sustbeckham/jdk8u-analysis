@@ -4352,11 +4352,15 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         // on again later if we do. Using a scoped
         // NoRefDiscovery object will do this.
         // *** ref_processor_cm()返回的是ReferenceProcessor对象
+        // *** 完了又是个看不懂的...
         NoRefDiscovery no_cm_discovery(ref_processor_cm());
+
 
         // Forget the current alloc region (we might even choose it to be part
         // of the collection set!).
+        // *** 实现在g1Allocator.cpp
         _allocator->release_mutator_alloc_region();
+
 
         // We should call this after we retire the mutator alloc
         // region(s) so that all the ALLOC / RETIRE events are generated

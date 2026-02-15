@@ -520,6 +520,9 @@ class ReferenceProcessor : public CHeapObj<mtGC> {
   void clear_discovered_references() PRODUCT_RETURN;
 };
 
+
+
+
 // A utility class to disable reference discovery in
 // the scope which contains it, for given ReferenceProcessor.
 class NoRefDiscovery: StackObj {
@@ -540,6 +543,8 @@ class NoRefDiscovery: StackObj {
     }
   }
 };
+
+
 
 
 // A utility class to temporarily mutate the span of the

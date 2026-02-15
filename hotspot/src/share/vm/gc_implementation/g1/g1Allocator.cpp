@@ -34,6 +34,9 @@ void G1DefaultAllocator::init_mutator_alloc_region() {
   _mutator_alloc_region.init();
 }
 
+
+
+
 void G1DefaultAllocator::release_mutator_alloc_region() {
   _mutator_alloc_region.release();
   assert(_mutator_alloc_region.get() == NULL, "post-condition");

@@ -196,7 +196,12 @@ void G1AllocRegion::update_alloc_region(HeapRegion* alloc_region) {
 HeapRegion* G1AllocRegion::release() {
   trace("releasing");
   HeapRegion* alloc_region = _alloc_region;
+
+
+  // 核心就这句
   retire(false /* fill_up */);
+
+
   assert(_alloc_region == _dummy_region,
          ar_ext_msg(this, "post-condition of retire()"));
   _alloc_region = NULL;

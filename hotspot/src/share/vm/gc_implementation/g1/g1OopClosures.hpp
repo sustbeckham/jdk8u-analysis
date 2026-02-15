@@ -186,6 +186,9 @@ public:
   virtual void do_oop(narrowOop* p) { do_oop_nv(p); }
 };
 
+
+
+
 // Closure to scan the root regions during concurrent marking
 class G1RootRegionScanClosure : public MetadataAwareOopClosure {
 private:
@@ -200,6 +203,9 @@ public:
   virtual void do_oop(      oop* p) { do_oop_nv(p); }
   virtual void do_oop(narrowOop* p) { do_oop_nv(p); }
 };
+
+
+
 
 // Closure that applies the given two closures in sequence.
 // Used by the RSet refinement code (when updating RSets

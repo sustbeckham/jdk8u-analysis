@@ -395,6 +395,7 @@ GCTaskManager::GCTaskManager(uint workers, NotifyDoneClosure* ndc) :
 }
 
 void GCTaskManager::initialize() {
+  // 这里不会执行的，不是G1的代码，放在这里就是为了验证下
   tty->printStackTrace();
 
   if (TraceGCTaskManager) {

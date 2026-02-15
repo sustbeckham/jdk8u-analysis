@@ -506,6 +506,10 @@ HeapRegion* CMRootRegions::claim_next() {
   return res;
 }
 
+
+
+
+// 这里只是释放了RootRegionScan_lock这个锁，要看看到底什么条件才会触发这个finish
 void CMRootRegions::scan_finished() {
   assert(scan_in_progress(), "pre-condition");
 
@@ -522,6 +526,11 @@ void CMRootRegions::scan_finished() {
   }
 }
 
+
+
+
+// *** 只是在等待RootRegionScan_lock这个锁被唤醒，所以看看谁会释放它就好了
+// *** 释放的函数刚好就在上面的scan_finished函数完成后
 bool CMRootRegions::wait_until_scan_finished() {
   if (!scan_in_progress()) return false;
 
@@ -534,9 +543,16 @@ bool CMRootRegions::wait_until_scan_finished() {
   return true;
 }
 
+
+
+
+// 之前已经确认_MSC_VER这里没定义，这块忽略
 #ifdef _MSC_VER // the use of 'this' below gets a warning, make it go away
 #pragma warning( disable:4355 ) // 'this' : used in base member initializer list
 #endif // _MSC_VER
+
+
+
 
 uint ConcurrentMark::scale_parallel_threads(uint n_par_threads) {
   return MAX2((n_par_threads + 2) / 4, 1U);
@@ -1227,22 +1243,43 @@ uint ConcurrentMark::calc_parallel_marking_threads() {
   return 0;
 }
 
+
+
+
 void ConcurrentMark::scanRootRegion(HeapRegion* hr, uint worker_id) {
   // Currently, only survivors can be root regions.
   assert(hr->next_top_at_mark_start() == hr->bottom(), "invariant");
+
+
+  // RootRegion的闭包处理类, 定义在g1OopClosures.hpp
   G1RootRegionScanClosure cl(_g1h, this, worker_id);
 
+
+  // PrefetchScanIntervalInBytes这个值默认是-1，语义是关闭
   const uintx interval = PrefetchScanIntervalInBytes;
   HeapWord* curr = hr->bottom();
   const HeapWord* end = hr->top();
   while (curr < end) {
+    // AMD64架构下的cpu缓存预取优化，主动加载临接的内存地址，减少后续内存访问延迟
+    // 但由于前置的interval是-1，这里可以暂时认为这个优化什么都没做就好
+    // 这个能力是cpu提供的，所以具体实现在prefetch_linux_86.inline.hpp
     Prefetch::read(curr, interval);
+
     oop obj = oop(curr);
+
+
+    // 进一步走到g1OopClosures.inline.hpp，详细可见G1RootRegionScanClosure::do_oop_nv
+    // 内部闭包又特么绕到concurrentMark.inline.hpp, 继续详细可见ConcurrentMark::grayRoot
     int size = obj->oop_iterate(&cl);
+
+
     assert(size == obj->size(), "sanity");
     curr += size;
   }
 }
+
+
+
 
 class CMRootRegionScanTask : public AbstractGangTask {
 private:
@@ -1265,6 +1302,9 @@ public:
   }
 };
 
+
+
+
 void ConcurrentMark::scanRootRegions() {
   // Start of concurrent marking.
   ClassLoaderDataGraph::clear_claimed_marks();
@@ -1278,6 +1318,8 @@ void ConcurrentMark::scanRootRegions() {
            "Maximum number of marking threads exceeded");
     uint active_workers = MAX2(1U, parallel_marking_threads());
 
+
+    // 这个CMRootRegionScanTask是真正执行这个扫描任务的线程
     CMRootRegionScanTask task(this);
     if (use_parallel_marking_threads()) {
       _parallel_workers->set_active_workers((int) active_workers);
@@ -1285,6 +1327,7 @@ void ConcurrentMark::scanRootRegions() {
     } else {
       task.work(0);
     }
+
 
     // It's possible that has_aborted() is true here without actually
     // aborting the survivor scan earlier. This is OK as it's

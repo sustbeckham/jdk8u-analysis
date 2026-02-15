@@ -141,6 +141,9 @@ inline bool ConcurrentMark::par_mark_and_count(oop obj,
                                                size_t* marked_bytes_array,
                                                BitMap* task_card_bm) {
   HeapWord* addr = (HeapWord*)obj;
+
+
+  // 这里的parMark函数应该就是上面的位图相关的CMBitMap::parMark
   if (_nextMarkBitMap->parMark(addr)) {
     // Update the task specific count data for the object.
     count_object(obj, hr, marked_bytes_array, task_card_bm);
@@ -148,6 +151,9 @@ inline bool ConcurrentMark::par_mark_and_count(oop obj,
   }
   return false;
 }
+
+
+
 
 // Attempts to mark the given object and, if successful, counts
 // the object in the task/worker counting structures for the
@@ -164,6 +170,9 @@ inline bool ConcurrentMark::par_mark_and_count(oop obj,
   }
   return false;
 }
+
+
+
 
 inline bool CMBitMapRO::iterate(BitMapClosure* cl, MemRegion mr) {
   HeapWord* start_addr = MAX2(startWord(), mr.start());
@@ -210,10 +219,19 @@ inline void CMBitMap::clear(HeapWord* addr) {
   _bm.clear_bit(heapWordToOffset(addr));
 }
 
+
+
+
 inline bool CMBitMap::parMark(HeapWord* addr) {
+  // 纯断言的宏先跳过
   check_mark(addr);
+
+
   return _bm.par_set_bit(heapWordToOffset(addr));
 }
+
+
+
 
 inline bool CMBitMap::parClear(HeapWord* addr) {
   check_mark(addr);
@@ -372,6 +390,9 @@ inline void ConcurrentMark::markPrev(oop p) {
   ((CMBitMap*)_prevMarkBitMap)->mark((HeapWord*) p);
 }
 
+
+
+
 inline void ConcurrentMark::grayRoot(oop obj, size_t word_size,
                                      uint worker_id, HeapRegion* hr) {
   assert(obj != NULL, "pre-condition");
@@ -396,8 +417,10 @@ inline void ConcurrentMark::grayRoot(oop obj, size_t word_size,
                  word_size * HeapWordSize, hr->capacity(),
                  HR_FORMAT_PARAMS(hr)));
 
+
   if (addr < hr->next_top_at_mark_start()) {
     if (!_nextMarkBitMap->isMarked(addr)) {
+      // 核心看这里
       par_mark_and_count(obj, word_size, hr, worker_id);
     }
   }

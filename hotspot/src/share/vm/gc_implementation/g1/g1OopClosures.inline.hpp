@@ -124,6 +124,9 @@ inline void G1CMOopClosure::do_oop_nv(T* p) {
   _task->deal_with_reference(obj);
 }
 
+
+
+
 template <class T>
 inline void G1RootRegionScanClosure::do_oop_nv(T* p) {
   T heap_oop = oopDesc::load_heap_oop(p);
@@ -133,6 +136,9 @@ inline void G1RootRegionScanClosure::do_oop_nv(T* p) {
     _cm->grayRoot(obj, obj->size(), _worker_id, hr);
   }
 }
+
+
+
 
 template <class T>
 inline void G1Mux2Closure::do_oop_nv(T* p) {

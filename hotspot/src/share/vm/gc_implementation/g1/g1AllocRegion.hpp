@@ -224,8 +224,6 @@ public:
 
 
 
-  // 实现在g1AllocRegion.cpp.......
-  //
   // This specialization of release() makes sure that the last card that has
   // been allocated into has been completely filled by a dummy object.  This
   // avoids races when remembered set scanning wants to update the BOT of the
