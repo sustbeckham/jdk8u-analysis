@@ -139,7 +139,7 @@ void WorkGang::run_task(AbstractGangTask* task) {
 
 
 
-// 这里是hotspot内部对于需要多线程任务处理的分发执行入口
+// 这里是hotspot内部对于需要多线程任务处理的执行入口
 void WorkGang::run_task(AbstractGangTask* task, uint no_of_parallel_workers) {
   task->set_for_termination(no_of_parallel_workers);
 
@@ -188,6 +188,7 @@ void WorkGang::run_task(AbstractGangTask* task, uint no_of_parallel_workers) {
 
 
 
+// FlexibleWorkGang是AbstractGangTask的通用实现
 void FlexibleWorkGang::run_task(AbstractGangTask* task) {
   // If active_workers() is passed, _finished_workers
   // must only be incremented for workers that find non_null
@@ -263,7 +264,6 @@ GangWorker::GangWorker(AbstractWorkGang* gang, uint id) {
 
 
 void GangWorker::run() {
-  tty->printStackTrace();
   initialize();
   loop();
 }

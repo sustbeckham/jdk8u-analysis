@@ -333,6 +333,9 @@ class CMMarkStack VALUE_OBJ_CLASS_SPEC {
   void oops_do(OopClosure* f);
 };
 
+
+
+
 class ForceOverflowSettings VALUE_OBJ_CLASS_SPEC {
 private:
 #ifndef PRODUCT
@@ -345,6 +348,9 @@ public:
   void update() PRODUCT_RETURN;
   bool should_force() PRODUCT_RETURN_( return false; );
 };
+
+
+
 
 // this will enable a variety of different statistics per GC task
 #define _MARKING_STATS_       0

@@ -474,6 +474,7 @@ void CMRootRegions::init(G1CollectedHeap* g1h, ConcurrentMark* cm) {
 
 
 
+// 核心就是确定suvivor对应的第一个Region，为后续的RootRegion扫描做准备
 void CMRootRegions::prepare_for_scan() {
   assert(!scan_in_progress(), "pre-condition");
 
@@ -1018,13 +1019,17 @@ void ConcurrentMark::checkpointRootsInitialPre() {
 void ConcurrentMark::checkpointRootsInitialPost() {
   G1CollectedHeap*   g1h = G1CollectedHeap::heap();
 
+
   // If we force an overflow during remark, the remark operation will
   // actually abort and we'll restart concurrent marking. If we always
   // force an oveflow during remark we'll never actually complete the
   // marking phase. So, we initilize this here, at the start of the
   // cycle, so that at the remaining overflow number will decrease at
   // every remark and we'll eventually not need to cause one.
+  // *** force_overflow_stw()返回的是个ForceOverflowSettings这样的模型
+  // *** 这个模型默认在生产代码是不生效的，返回是空实现，所以这里不看跳过
   force_overflow_stw()->init();
+
 
   // Start Concurrent Marking weak-reference discovery.
   ReferenceProcessor* rp = g1h->ref_processor_cm();
@@ -1038,6 +1043,8 @@ void ConcurrentMark::checkpointRootsInitialPost() {
   satb_mq_set.set_active_all_threads(true, /* new active value */
                                      false /* expected_active */);
 
+
+  // 核心就是确定survivor对应的第一个Region，为后续的RootRegion扫描做准备
   _root_regions.prepare_for_scan();
 
   // update_g1_committed() will be called at the end of an evac pause
@@ -1045,6 +1052,9 @@ void ConcurrentMark::checkpointRootsInitialPost() {
   // initial-mark pause to update the heap end, if the heap expands
   // during it. No need to call it here.
 }
+
+
+
 
 /*
  * Notice that in the next two methods, we actually leave the STS
@@ -1151,6 +1161,10 @@ void ConcurrentMark::enter_second_sync_barrier(uint worker_id) {
   }
 }
 
+
+
+
+// 非生产实际代码，不看
 #ifndef PRODUCT
 void ForceOverflowSettings::init() {
   _num_remaining = G1ConcMarkForceOverflow;
@@ -1177,6 +1191,9 @@ bool ForceOverflowSettings::should_force() {
 }
 #endif // !PRODUCT
 
+
+
+
 class CMConcurrentMarkingTask: public AbstractGangTask {
 private:
   ConcurrentMark*       _cm;
@@ -1198,7 +1215,11 @@ public:
     if (!_cm->has_aborted()) {
       do {
         double start_vtime_sec = os::elapsedVTime();
+
+
+        // 该值默认配置为10.0
         double mark_step_duration_ms = G1ConcMarkStepDurationMillis;
+
 
         the_task->do_marking_step(mark_step_duration_ms,
                                   true  /* do_termination */,
@@ -1367,6 +1388,8 @@ void ConcurrentMark::scanRootRegions() {
 
 
 
+// 第三阶段: 并发标记(官方文档解释: Find live objects over the entire heap. This happens while the application
+// is running. This phase can be interrupted by young generation garbage collections.)
 void ConcurrentMark::markFromRoots() {
   // we might be tempted to assert that:
   // assert(asynch == !SafepointSynchronize::is_at_safepoint(),
@@ -1388,6 +1411,8 @@ void ConcurrentMark::markFromRoots() {
   // Parallel task terminator is set in "set_concurrency_and_phase()"
   set_concurrency_and_phase(active_workers, true /* concurrent */);
 
+
+  // 核心的任务执行交给CMConcurrentMarkingTask来完成
   CMConcurrentMarkingTask markingTask(this, cmThread());
   if (use_parallel_marking_threads()) {
     _parallel_workers->set_active_workers((int)active_workers);

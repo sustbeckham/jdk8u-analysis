@@ -69,7 +69,12 @@ void ReferenceProcessor::init_statics() {
   _pending_list_uses_discovered_field = JDK_Version::current().pending_list_uses_discovered_field();
 }
 
+
+
+
 void ReferenceProcessor::enable_discovery(bool verify_disabled, bool check_no_refs) {
+
+  // 这里不看
 #ifdef ASSERT
   // Verify that we're not currently discovering refs
   assert(!verify_disabled || !_discovering_refs, "nested call?");
@@ -86,7 +91,7 @@ void ReferenceProcessor::enable_discovery(bool verify_disabled, bool check_no_re
   // Unsafe between GCs. Unconditionally update the static
   // field in ReferenceProcessor here so that we use the new
   // value during reference discovery.
-
+  // *** Java的SoftReference类里的clock字段内容获取
   _soft_ref_timestamp_clock = java_lang_ref_SoftReference::clock();
   _discovering_refs = true;
 }

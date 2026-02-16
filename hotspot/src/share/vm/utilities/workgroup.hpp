@@ -117,6 +117,9 @@ class AbstractGangTaskWOopQueues : public AbstractGangTask {
 
 
 
+// *** Hotspot内部使用的线程池的抽象基类
+// *** 子类通过实现run_task函数来实现自己的任务
+//
 // Class AbstractWorkGang:
 // An abstract class representing a gang of workers.
 // You subclass this to supply an implementation of run_task().
@@ -220,6 +223,9 @@ protected:
   void internal_note_finish();
 };
 
+
+
+
 class WorkData: public StackObj {
   // This would be a struct, but I want accessor methods.
 private:
@@ -265,6 +271,10 @@ public:
   bool initialize_workers();
 };
 
+
+
+
+// *** 这个WorkerThread定义在thread.hpp，代表这实际运行任务的线程
 // Class GangWorker:
 //   Several instances of this class run in parallel as workers for a gang.
 class GangWorker: public WorkerThread {
@@ -289,6 +299,9 @@ protected:
 public:
   AbstractWorkGang* gang() const { return _gang; }
 };
+
+
+
 
 // Dynamic number of worker threads
 //
