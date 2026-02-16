@@ -28,6 +28,10 @@
 #include "runtime/atomic.hpp"
 #include "utilities/bitMap.hpp"
 
+
+
+
+// 断言不看
 #ifdef ASSERT
 inline void BitMap::verify_index(idx_t index) const {
   assert(index < _size, "BitMap index out of bounds");
@@ -40,6 +44,9 @@ inline void BitMap::verify_range(idx_t beg_index, idx_t end_index) const {
 }
 #endif // #ifdef ASSERT
 
+
+
+
 inline void BitMap::set_bit(idx_t bit) {
   verify_index(bit);
   *word_addr(bit) |= bit_mask(bit);
@@ -50,26 +57,45 @@ inline void BitMap::clear_bit(idx_t bit) {
   *word_addr(bit) &= ~bit_mask(bit);
 }
 
+
+
+
+// 基于CAS方式修改位图的值
 inline bool BitMap::par_set_bit(idx_t bit) {
+  // 纯断言先跳过
   verify_index(bit);
+
+
+  // 获取位图原始值
   volatile bm_word_t* const addr = word_addr(bit);
   const bm_word_t mask = bit_mask(bit);
   bm_word_t old_val = *addr;
 
   do {
+    // 如果当前就是要设置的值，那就不用做什么了
     const bm_word_t new_val = old_val | mask;
     if (new_val == old_val) {
       return false;     // Someone else beat us to it.
     }
+
+    // CAS修改
     const bm_word_t cur_val = (bm_word_t) Atomic::cmpxchg_ptr((void*) new_val,
                                                       (volatile void*) addr,
                                                       (void*) old_val);
+
+    // 修改成功了
     if (cur_val == old_val) {
       return true;      // Success.
     }
+
+
+    // 修改失败了，while重试
     old_val = cur_val;  // The value changed, try again.
   } while (true);
 }
+
+
+
 
 inline bool BitMap::par_clear_bit(idx_t bit) {
   verify_index(bit);
@@ -91,6 +117,9 @@ inline bool BitMap::par_clear_bit(idx_t bit) {
     old_val = cur_val;  // The value changed, try again.
   } while (true);
 }
+
+
+
 
 inline void BitMap::set_range(idx_t beg, idx_t end, RangeSizeHint hint) {
   if (hint == small_range && end - beg == 1) {

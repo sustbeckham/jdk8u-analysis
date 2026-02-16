@@ -79,8 +79,10 @@ class BitMap VALUE_OBJ_CLASS_SPEC {
   bm_word_t* map() const           { return _map; }
   bm_word_t  map(idx_t word) const { return _map[word]; }
 
+
   // Return a pointer to the word containing the specified bit.
   bm_word_t* word_addr(idx_t bit) const { return map() + word_index(bit); }
+
 
   // Set a word to a specified value or to all ones; clear a word.
   void set_word  (idx_t word, bm_word_t val) { _map[word] = val; }

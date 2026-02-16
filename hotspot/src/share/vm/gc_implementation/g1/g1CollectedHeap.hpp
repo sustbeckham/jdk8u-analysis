@@ -83,6 +83,9 @@ typedef GenericTaskQueueSet<RefToScanQueue, mtGC> RefToScanQueueSet;
 typedef int RegionIdx_t;   // needs to hold [ 0..max_regions() )
 typedef int CardIdx_t;     // needs to hold [ 0..CardsPerRegion )
 
+
+
+
 class YoungList : public CHeapObj<mtGC> {
 private:
   G1CollectedHeap* _g1h;
@@ -146,14 +149,21 @@ public:
   }
 
   HeapRegion* first_region() { return _head; }
+
+
+  // 注意这里survivor也有专属的头尾节点
   HeapRegion* first_survivor_region() { return _survivor_head; }
   HeapRegion* last_survivor_region() { return _survivor_tail; }
+
 
   // debugging
   bool          check_list_well_formed();
   bool          check_list_empty(bool check_sample = true);
   void          print();
 };
+
+
+
 
 // The G1 STW is alive closure.
 // An instance is embedded into the G1CH and used as the

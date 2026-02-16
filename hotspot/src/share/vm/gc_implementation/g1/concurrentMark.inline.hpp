@@ -75,6 +75,9 @@ inline BitMap::idx_t ConcurrentMark::card_bitmap_index_for(HeapWord* addr) {
   return card_num - heap_bottom_card_num();
 }
 
+
+
+
 // Counts the given memory region in the given task/worker
 // counting data structures.
 inline void ConcurrentMark::count_region(MemRegion mr, HeapRegion* hr,
@@ -115,6 +118,9 @@ inline void ConcurrentMark::count_region(MemRegion mr, HeapRegion* hr,
   set_card_bitmap_range(task_card_bm, start_idx, end_idx, false /* is_par */);
 }
 
+
+
+
 // Counts the given memory region in the task/worker counting
 // data structures for the given worker id.
 inline void ConcurrentMark::count_region(MemRegion mr,
@@ -134,6 +140,10 @@ inline void ConcurrentMark::count_object(oop obj,
   count_region(mr, hr, marked_bytes_array, task_card_bm);
 }
 
+
+
+
+// 核心是去更新当前obj地址对应的位图
 // Attempts to mark the given object and, if successful, counts
 // the object in the given task/worker counting structures.
 inline bool ConcurrentMark::par_mark_and_count(oop obj,
@@ -143,7 +153,8 @@ inline bool ConcurrentMark::par_mark_and_count(oop obj,
   HeapWord* addr = (HeapWord*)obj;
 
 
-  // 这里的parMark函数应该就是上面的位图相关的CMBitMap::parMark
+  // *** 这里的parMark函数应该就是上面的位图相关的CMBitMap::parMark
+  // *** parMark函数的意思是基于CAS方式修改当前内存对应的位图的值
   if (_nextMarkBitMap->parMark(addr)) {
     // Update the task specific count data for the object.
     count_object(obj, hr, marked_bytes_array, task_card_bm);
@@ -222,11 +233,14 @@ inline void CMBitMap::clear(HeapWord* addr) {
 
 
 
+// 基于CAS方式修改当前内存对应的位图的值
 inline bool CMBitMap::parMark(HeapWord* addr) {
   // 纯断言的宏先跳过
   check_mark(addr);
 
 
+  // *** 基于CAS方式修改位图的值, 实现在bitMap.inline.hpp
+  // *** heapWordToOffset是计算当前地址对应的是位图的哪一块区域
   return _bm.par_set_bit(heapWordToOffset(addr));
 }
 
@@ -393,6 +407,7 @@ inline void ConcurrentMark::markPrev(oop p) {
 
 
 
+// 核心是去更新当前obj地址对应的位图
 inline void ConcurrentMark::grayRoot(oop obj, size_t word_size,
                                      uint worker_id, HeapRegion* hr) {
   assert(obj != NULL, "pre-condition");
@@ -420,7 +435,7 @@ inline void ConcurrentMark::grayRoot(oop obj, size_t word_size,
 
   if (addr < hr->next_top_at_mark_start()) {
     if (!_nextMarkBitMap->isMarked(addr)) {
-      // 核心看这里
+      // 核心看这里，核心是去更新当前obj地址对应的位图
       par_mark_and_count(obj, word_size, hr, worker_id);
     }
   }

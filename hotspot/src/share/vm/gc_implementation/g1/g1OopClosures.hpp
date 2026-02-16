@@ -199,7 +199,12 @@ public:
   G1RootRegionScanClosure(G1CollectedHeap* g1h, ConcurrentMark* cm,
                           uint worker_id) :
     _g1h(g1h), _cm(cm), _worker_id(worker_id) { }
+
+
+  // 核心的处理函数在这里，具体实现到g1OopClosures.inline.hpp
   template <class T> void do_oop_nv(T* p);
+
+
   virtual void do_oop(      oop* p) { do_oop_nv(p); }
   virtual void do_oop(narrowOop* p) { do_oop_nv(p); }
 };

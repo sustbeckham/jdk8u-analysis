@@ -456,25 +456,42 @@ void CMMarkStack::oops_do(OopClosure* f) {
   }
 }
 
+
+
+
 CMRootRegions::CMRootRegions() :
   _young_list(NULL), _cm(NULL), _scan_in_progress(false),
   _should_abort(false),  _next_survivor(NULL) { }
+
+
+
 
 void CMRootRegions::init(G1CollectedHeap* g1h, ConcurrentMark* cm) {
   _young_list = g1h->young_list();
   _cm = cm;
 }
 
+
+
+
 void CMRootRegions::prepare_for_scan() {
   assert(!scan_in_progress(), "pre-condition");
 
   // Currently, only survivors can be root regions.
   assert(_next_survivor == NULL, "pre-condition");
+
+
+  // *** 这里很重要，把_next_survivor指向第一个survivor区域的region
+  // *** 这里我们先可以暂时不关心Young区域是怎么构建的，只需知道survivor是内部有链表串起来的，且eden和survivor都是连续存储的
   _next_survivor = _young_list->first_survivor_region();
   _scan_in_progress = (_next_survivor != NULL);
   _should_abort = false;
 }
 
+
+
+
+// 找到下一个待处理的survivor
 HeapRegion* CMRootRegions::claim_next() {
   if (_should_abort) {
     // If someone has set the should_abort flag, we return NULL to
@@ -482,6 +499,8 @@ HeapRegion* CMRootRegions::claim_next() {
     return NULL;
   }
 
+
+  // 官方注释也说明了，RootRegion仅用于Survivor扫描
   // Currently, only survivors can be root regions.
   HeapRegion* res = _next_survivor;
   if (res != NULL) {
@@ -492,8 +511,10 @@ HeapRegion* CMRootRegions::claim_next() {
       if (res == _young_list->last_survivor_region()) {
         // We just claimed the last survivor so store NULL to indicate
         // that we're done.
+        // 这里找到了最后一个survivor
         _next_survivor = NULL;
       } else {
+        // 这里放心的找下一个young，因为survivor连续，所以这里拿的一定是survivor
         _next_survivor = res->get_next_young_region();
       }
     } else {
@@ -1270,6 +1291,7 @@ void ConcurrentMark::scanRootRegion(HeapRegion* hr, uint worker_id) {
 
     // 进一步走到g1OopClosures.inline.hpp，详细可见G1RootRegionScanClosure::do_oop_nv
     // 内部闭包又特么绕到concurrentMark.inline.hpp, 继续详细可见ConcurrentMark::grayRoot
+    // 而grayRoot的本质就是更新当前对象所属位图
     int size = obj->oop_iterate(&cl);
 
 
@@ -1294,9 +1316,14 @@ public:
            "this should only be done by a conc GC thread");
 
     CMRootRegions* root_regions = _cm->root_regions();
+
+
+    // 遍历survivor区域，所有再survivor区域的region都走一遍scanRootRegion函数
     HeapRegion* hr = root_regions->claim_next();
     while (hr != NULL) {
       _cm->scanRootRegion(hr, worker_id);
+
+      // 找到下一个待处理的survivor
       hr = root_regions->claim_next();
     }
   }
@@ -1322,6 +1349,7 @@ void ConcurrentMark::scanRootRegions() {
     // 这个CMRootRegionScanTask是真正执行这个扫描任务的线程
     CMRootRegionScanTask task(this);
     if (use_parallel_marking_threads()) {
+      // 这里的_parallel_workers实际是hotspot内部的线程组FlexibleWorkGang
       _parallel_workers->set_active_workers((int) active_workers);
       _parallel_workers->run_task(&task);
     } else {

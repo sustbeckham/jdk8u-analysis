@@ -51,6 +51,9 @@ class YieldingFlexibleGangTask;
 class WorkData;
 class AbstractWorkGang;
 
+
+
+
 // An abstract task to be worked on by a gang.
 // You subclass this to supply your own work() method
 class AbstractGangTask VALUE_OBJ_CLASS_SPEC {
@@ -95,6 +98,9 @@ protected:
 public:
 };
 
+
+
+
 class AbstractGangTaskWOopQueues : public AbstractGangTask {
   OopTaskQueueSet*       _queues;
   ParallelTaskTerminator _terminator;
@@ -107,6 +113,8 @@ class AbstractGangTaskWOopQueues : public AbstractGangTask {
   }
   OopTaskQueueSet* queues() { return _queues; }
 };
+
+
 
 
 // Class AbstractWorkGang:

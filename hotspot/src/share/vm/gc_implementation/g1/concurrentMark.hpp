@@ -372,6 +372,9 @@ typedef enum {
 
 class YoungList;
 
+
+
+
 // Root Regions are regions that are not empty at the beginning of a
 // marking cycle and which we might collect during an evacuation pause
 // while the cycle is active. Given that, during evacuation pauses, we
@@ -392,6 +395,9 @@ private:
 
   volatile bool        _scan_in_progress;
   volatile bool        _should_abort;
+
+
+  // 因为RootRegion只处理survivor指向老年代的引用，所以这里初始化应该是survivor的第一个region
   HeapRegion* volatile _next_survivor;
 
 public:
@@ -422,6 +428,9 @@ public:
   // are done. Return true if we had to wait, false otherwise.
   bool wait_until_scan_finished();
 };
+
+
+
 
 class ConcurrentMarkThread;
 

@@ -133,6 +133,8 @@ inline void G1RootRegionScanClosure::do_oop_nv(T* p) {
   if (!oopDesc::is_null(heap_oop)) {
     oop obj = oopDesc::decode_heap_oop_not_null(heap_oop);
     HeapRegion* hr = _g1h->heap_region_containing((HeapWord*) obj);
+    // 这里本质就是去更新当前obj地址对应的位图
+    // 具体实现又特么折返到concurrentMark.inline.hpp
     _cm->grayRoot(obj, obj->size(), _worker_id, hr);
   }
 }

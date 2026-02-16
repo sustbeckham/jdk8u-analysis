@@ -27,6 +27,7 @@
 #include "memory/allocation.inline.hpp"
 #include "runtime/os.hpp"
 #include "utilities/workgroup.hpp"
+#include "utilities/ostream.hpp"
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
@@ -128,19 +129,31 @@ GangWorker* AbstractWorkGang::gang_worker(uint i) const {
   return result;
 }
 
+
+
+
 void WorkGang::run_task(AbstractGangTask* task) {
   run_task(task, total_workers());
 }
 
+
+
+
+// 这里是hotspot内部对于需要多线程任务处理的分发执行入口
 void WorkGang::run_task(AbstractGangTask* task, uint no_of_parallel_workers) {
   task->set_for_termination(no_of_parallel_workers);
 
   // This thread is executed by the VM thread which does not block
   // on ordinary MutexLocker's.
   MutexLockerEx ml(monitor(), Mutex::_no_safepoint_check_flag);
+
+
+  // 默认false，不看
   if (TraceWorkGang) {
     tty->print_cr("Running work gang %s task %s", name(), task->name());
   }
+
+
   // Tell all the workers to run a task.
   assert(task != NULL, "Running a null task");
   // Initialize.
@@ -152,6 +165,8 @@ void WorkGang::run_task(AbstractGangTask* task, uint no_of_parallel_workers) {
   monitor()->notify_all();
   // Wait for them to be finished
   while (finished_workers() < no_of_parallel_workers) {
+
+    // 默认false，不看
     if (TraceWorkGang) {
       tty->print_cr("Waiting in work gang %s: %d/%d finished sequence %d",
                     name(), finished_workers(), no_of_parallel_workers,
@@ -159,6 +174,7 @@ void WorkGang::run_task(AbstractGangTask* task, uint no_of_parallel_workers) {
     }
     monitor()->wait(/* no_safepoint_check */ true);
   }
+
   _task = NULL;
   if (TraceWorkGang) {
     tty->print_cr("\nFinished work gang %s: %d/%d sequence %d",
@@ -169,6 +185,9 @@ void WorkGang::run_task(AbstractGangTask* task, uint no_of_parallel_workers) {
   }
 }
 
+
+
+
 void FlexibleWorkGang::run_task(AbstractGangTask* task) {
   // If active_workers() is passed, _finished_workers
   // must only be incremented for workers that find non_null
@@ -176,6 +195,9 @@ void FlexibleWorkGang::run_task(AbstractGangTask* task) {
   // task is not null).
   WorkGang::run_task(task, (uint) active_workers());
 }
+
+
+
 
 void AbstractWorkGang::stop() {
   // Tell all workers to terminate, then wait for them to become inactive.
@@ -237,10 +259,17 @@ GangWorker::GangWorker(AbstractWorkGang* gang, uint id) {
   set_name("Gang worker#%d (%s)", id, gang->name());
 }
 
+
+
+
 void GangWorker::run() {
+  tty->printStackTrace();
   initialize();
   loop();
 }
+
+
+
 
 void GangWorker::initialize() {
   this->initialize_thread_local_storage();
@@ -256,6 +285,9 @@ void GangWorker::initialize() {
   assert(!Thread::current()->is_VM_thread(), "VM thread should not be part"
          " of a work gang");
 }
+
+
+
 
 void GangWorker::loop() {
   int previous_sequence_number = 0;
@@ -342,6 +374,9 @@ void GangWorker::loop() {
     previous_sequence_number = data.sequence_number();
   }
 }
+
+
+
 
 bool GangWorker::is_GC_task_thread() const {
   return gang()->are_GC_task_threads();
