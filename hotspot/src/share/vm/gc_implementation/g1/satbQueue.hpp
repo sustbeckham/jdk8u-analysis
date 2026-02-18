@@ -41,6 +41,9 @@ public:
   virtual void do_buffer(void** buffer, size_t size) = 0;
 };
 
+
+
+
 // A ptrQueue whose elements are "oops", pointers to object heads.
 class ObjPtrQueue: public PtrQueue {
   friend class SATBMarkQueueSet;
@@ -75,6 +78,9 @@ public:
   static void print(const char* name, void** buf, size_t index, size_t sz);
 #endif // PRODUCT
 };
+
+
+
 
 class SATBMarkQueueSet: public PtrQueueSet {
   ObjPtrQueue _shared_satb_queue;

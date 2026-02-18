@@ -4231,15 +4231,22 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
   // Can we store original value in the thread's buffer?
   // Is index == 0?
   // (The index field is typed as size_t.)
-
+  //
+  // *** 需要留意的是缓冲区是个反向写入的模型，判断index==0其实就是在判断缓冲区是不是已经满了
+  // *** 如果已经满了，交给runtime节点那边去执行
+  // *** runtime节点内部的SharedRuntime::g1_wb_pre内部会进一步考虑满了的情况，会写入到全局队列
   movptr(tmp, index);                   // tmp := *index_adr
   cmpptr(tmp, 0);                       // tmp == 0?
   jcc(Assembler::equal, runtime);       // If yes, goto runtime
 
+
+  // *** 能走到这里说明线程私有的SATB队列没有满
+  // *** 因为是反向写入，这里的subptr和addptr合并起来就是实际向私有队列写入的过程，这样的汇编指令会更高效
   subptr(tmp, wordSize);                // tmp := tmp - wordSize
   movptr(index, tmp);                   // *index_adr := tmp
   addptr(tmp, buffer);                  // tmp := tmp + *buffer_adr
 
+  // *** 接上，这里会实际把修改前的值pre_val写入到线程私有的SATB队列
   // Record the previous value
   movptr(Address(tmp, 0), pre_val);
   jmp(done);
@@ -4277,6 +4284,7 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
 
   // *** 这里可以不用过于纠结expand_call这个参数，这里的本质都是一样，都是执行SharedRuntime::g1_wb_pre这个函数，只不过调用方式有差异
   // *** 这里的pre_val是实际修改前的值，将修改前的值入线程私有的SATB队列
+  // *** 每个线程都有私有的SATB队列，但是它们都共同引用了一个全局的STAB队列，如果私有的满了，写全局队列
   if (expand_call) {
     LP64_ONLY( assert(pre_val != c_rarg1, "smashed arg"); )
     pass_arg1(this, thread);

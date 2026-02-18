@@ -210,6 +210,9 @@ void PtrQueue::handle_zero_index() {
   assert(0 <= _index && _index <= _sz, "Invariant.");
 }
 
+
+
+
 bool PtrQueueSet::process_or_enqueue_complete_buffer(void** buf) {
   if (Thread::current()->is_Java_thread()) {
     // We don't lock. It is fine to be epsilon-precise here.

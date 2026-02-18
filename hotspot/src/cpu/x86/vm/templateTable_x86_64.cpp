@@ -130,13 +130,13 @@ static Assembler::Condition j_not(TemplateTable::Condition cc) {
 // Miscelaneous helper routines
 // Store an oop (or NULL) at the address described by obj.
 // If val == noreg this means store a NULL
-
+//
+// *** 这里应该是引用赋值改变的地方，在修改前后都有对应的barrier来处理(SATB+卡表)
 static void do_oop_store(InterpreterMacroAssembler* _masm,
                          Address obj,
                          Register val,
                          BarrierSet::Name barrier,
                          bool precise) {
-  tty->print_cr("??????????????");
   assert(val == noreg || val == rax, "parameter is just for looks");
   switch (barrier) {
 #if INCLUDE_ALL_GCS
@@ -206,6 +206,9 @@ static void do_oop_store(InterpreterMacroAssembler* _masm,
 
   }
 }
+
+
+
 
 Address TemplateTable::at_bcp(int offset) {
   assert(_desc->uses_bcp(), "inconsistent uses_bcp information");
