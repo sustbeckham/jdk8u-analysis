@@ -4203,16 +4203,17 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
                                        PtrQueue::byte_offset_of_buf()));
 
 
+  // *** 如果还未开始marking，则流程直接结束(跳转到最后的done节点)
   // Is marking active?
   if (in_bytes(PtrQueue::byte_width_of_active()) == 4) {
-    tty->print_cr("AAAAAAAAAAAAAAAAAAAAAAA");
     cmpl(in_progress, 0);
   } else {
-    tty->print_cr("BBBBBBBBBBBBBBBBBBBBBBB");
+    // 走的是这个分支
     assert(in_bytes(PtrQueue::byte_width_of_active()) == 1, "Assumption");
     cmpb(in_progress, 0);
   }
   jcc(Assembler::equal, done);
+
 
   // Do we need to load the previous value?
   if (obj != noreg) {
@@ -5814,16 +5815,23 @@ void MacroAssembler::store_klass(Register dst, Register src) {
     movptr(Address(dst, oopDesc::klass_offset_in_bytes()), src);
 }
 
+
+
+
 void MacroAssembler::load_heap_oop(Register dst, Address src) {
 #ifdef _LP64
   // FIXME: Must change all places where we try to load the klass.
   if (UseCompressedOops) {
+    // 走这个分支
     movl(dst, src);
     decode_heap_oop(dst);
   } else
 #endif
     movptr(dst, src);
 }
+
+
+
 
 // Doesn't do verfication, generates fixed size code
 void MacroAssembler::load_heap_oop_not_null(Register dst, Address src) {
@@ -5967,16 +5975,24 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
   }
 }
 
+
+
+
 void  MacroAssembler::decode_heap_oop(Register r) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::decode_heap_oop: heap base corrupted?");
 #endif
+
+
   if (Universe::narrow_oop_base() == NULL) {
+    tty->print_cr("AAAAAAAAAAA");
     if (Universe::narrow_oop_shift() != 0) {
+      tty->print_cr("BBBBBBBBBB");
       assert (LogMinObjAlignmentInBytes == Universe::narrow_oop_shift(), "decode alg wrong");
       shlq(r, LogMinObjAlignmentInBytes);
     }
   } else {
+    tty->print_cr("CCCCCCCCC");
     Label done;
     shlq(r, LogMinObjAlignmentInBytes);
     jccb(Assembler::equal, done);
@@ -5985,6 +6001,9 @@ void  MacroAssembler::decode_heap_oop(Register r) {
   }
   verify_oop(r, "broken oop in decode_heap_oop");
 }
+
+
+
 
 void  MacroAssembler::decode_heap_oop_not_null(Register r) {
   // Note: it will change flags
