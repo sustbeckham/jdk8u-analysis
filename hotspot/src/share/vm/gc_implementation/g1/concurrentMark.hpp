@@ -629,12 +629,14 @@ protected:
   // SATB guarantees (i.e. their TAMS will be equal to bottom).
   bool        out_of_regions() { return _finger >= _heap_end; }
 
+
   // Returns the task with the given id
   CMTask* task(int id) {
     assert(0 <= id && id < (int) _active_tasks,
            "task id not within active bounds");
     return _tasks[id];
   }
+
 
   // Returns the task queue with the given id
   CMTaskQueue* task_queue(int id) {
@@ -1015,6 +1017,7 @@ protected:
 
 
 
+// *** 代表了具体的标记任务
 // A class representing a marking task.
 class CMTask : public TerminatorTerminator {
 private:

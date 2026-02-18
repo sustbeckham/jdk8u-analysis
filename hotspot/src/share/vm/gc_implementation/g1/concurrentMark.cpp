@@ -1207,11 +1207,17 @@ public:
 
     double start_vtime = os::elapsedVTime();
 
+
+    // 加入可暂停线程组，代表当前线程是内部可以被管理统一暂停的线程
     SuspendibleThreadSet::join();
 
+
+    // task函数的实现就在concurrentMark.hpp
     assert(worker_id < _cm->active_tasks(), "invariant");
     CMTask* the_task = _cm->task(worker_id);
     the_task->record_start_time();
+
+
     if (!_cm->has_aborted()) {
       do {
         double start_vtime_sec = os::elapsedVTime();
@@ -1229,7 +1235,10 @@ public:
         double elapsed_vtime_sec = end_vtime_sec - start_vtime_sec;
         _cm->clear_has_overflown();
 
+
+        // 确认下是否已经有全局暂停的命令发起了(比如有线程发起SuspendibleThreadSet::synchronize()), 这里是个暂停点
         _cm->do_yield_check(worker_id);
+
 
         jlong sleep_time_ms;
         if (!_cm->has_aborted() && the_task->has_aborted()) {
@@ -1256,6 +1265,9 @@ public:
 
   ~CMConcurrentMarkingTask() { }
 };
+
+
+
 
 // Calculates the number of active workers for a concurrent
 // phase.
@@ -3669,12 +3681,18 @@ void ConcurrentMark::print_on_error(outputStream* st) const {
   _nextMarkBitMap->print_on_error(st, " Next Bits: ");
 }
 
+
+
+
 // We take a break if someone is trying to stop the world.
 bool ConcurrentMark::do_yield_check(uint worker_id) {
+  // 确认下是否已经有全局暂停的命令发起了(比如有线程发起SuspendibleThreadSet::synchronize())
   if (SuspendibleThreadSet::should_yield()) {
     if (worker_id == 0) {
       _g1h->g1_policy()->record_concurrent_pause();
     }
+
+    // 如果确实有全局暂停的标志位，尝试挂起当前线程
     SuspendibleThreadSet::yield();
     return true;
   } else {
@@ -3682,6 +3700,10 @@ bool ConcurrentMark::do_yield_check(uint worker_id) {
   }
 }
 
+
+
+
+// 非生产代码不看这里
 #ifndef PRODUCT
 // for debugging purposes
 void ConcurrentMark::print_finger() {
@@ -3693,6 +3715,9 @@ void ConcurrentMark::print_finger() {
   gclog_or_tty->cr();
 }
 #endif
+
+
+
 
 template<bool scan>
 inline void CMTask::process_grey_object(oop obj) {
@@ -3779,6 +3804,9 @@ void CMTask::setup_for_region(HeapRegion* hr) {
   update_region_limit();
 }
 
+
+
+
 void CMTask::update_region_limit() {
   HeapRegion* hr            = _curr_region;
   HeapWord* bottom          = hr->bottom();
@@ -3815,6 +3843,9 @@ void CMTask::update_region_limit() {
 
   _region_limit = limit;
 }
+
+
+
 
 void CMTask::giveup_current_region() {
   assert(_curr_region != NULL, "invariant");
@@ -4172,6 +4203,9 @@ void CMTask::drain_global_stack(bool partially) {
   }
 }
 
+
+
+
 // SATB Queue has several assumptions on whether to call the par or
 // non-par versions of the methods. this is why some of the code is
 // replicated. We should really get rid of the single-threaded version
@@ -4209,6 +4243,9 @@ void CMTask::drain_satb_buffers() {
   // limits to get the regular clock call early
   decrease_limits();
 }
+
+
+
 
 void CMTask::print_stats() {
   gclog_or_tty->print_cr("Marking Stats, task = %u, calls = %d",
@@ -4365,6 +4402,10 @@ void CMTask::print_stats() {
 
  *****************************************************************************/
 
+
+
+
+// 并发标记核心代码。用于处理并发标记时(do_termination=true, is_serial=false)
 void CMTask::do_marking_step(double time_target_ms,
                              bool do_termination,
                              bool is_serial) {
@@ -4378,6 +4419,7 @@ void CMTask::do_marking_step(double time_target_ms,
 
   assert(!_claimed,
          "only one thread should claim this task at any one time");
+
 
   // OK, this doesn't safeguard again all possible scenarios, as it is
   // possible for two threads to set the _claimed flag at the same
@@ -4441,6 +4483,8 @@ void CMTask::do_marking_step(double time_target_ms,
   drain_local_queue(true);
   drain_global_stack(true);
 
+
+  // [非常重要]从此处开始，扫描堆内存，标记存活对象
   do {
     if (!has_aborted() && _curr_region != NULL) {
       // This means that we're already holding on to a region.

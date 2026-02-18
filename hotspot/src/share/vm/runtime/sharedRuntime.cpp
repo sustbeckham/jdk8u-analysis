@@ -233,7 +233,7 @@ JRT_END
 
 
 
-// 从macroAssembler_x86.cpp的g1_write_barrier_post感觉描述的意思是，能执行当前g1_wb_post，就说明g1已经知道当前是个跨带引用了...
+// 从macroAssembler_x86.cpp的g1_write_barrier_post感觉描述的意思是，能执行当前g1_wb_post，就说明g1已经知道当前是个跨代引用了...
 // 这里应该就是[后置写入屏障]。这里的[pointer store]意思是指讲一个对象的引用存储到另一个对象的字段中。举例说明:
 // Node nodeA = new Node();
 // Node nodeB = new Node();

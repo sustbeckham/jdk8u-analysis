@@ -159,8 +159,11 @@ public:
   static ByteSize byte_offset_of_active() {
     return byte_offset_of(PtrQueue, _active);
   }
-  static ByteSize byte_width_of_active() { return in_ByteSize(sizeof(bool)); }
 
+
+  static ByteSize byte_width_of_active() {
+    return in_ByteSize(sizeof(bool));
+  }
 };
 
 

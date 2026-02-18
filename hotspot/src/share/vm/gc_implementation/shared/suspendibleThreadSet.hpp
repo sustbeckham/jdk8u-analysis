@@ -27,6 +27,12 @@
 
 #include "memory/allocation.hpp"
 
+
+
+// *** 简单来说，SuspendibleThreadSet用来管理一批可以暂停的线程。这样外部线程可以直接
+//     和SuspendibleThreadSet交互来完成线程批量暂停和恢复。
+// *** AI告诉我这东西在safepoint期间也会用到。
+// *** 需要注意的是， SuspendibleThreadSet(简称STS)只用于虚拟机内部的线程，Java代码创建的线程不参与。
 // A SuspendibleThreadSet is a set of threads that can be suspended.
 // A thread can join and later leave the set, and periodically yield.
 // If some thread (not in the set) requests, via synchronize(), that
@@ -49,8 +55,11 @@ public:
   // Removes the current thread from the set.
   static void leave();
 
+
+  // 确认下是否已经有全局暂停的命令发起了(比如有线程发起SuspendibleThreadSet::synchronize())
   // Returns true if an suspension is in progress.
   static bool should_yield() { return _suspend_all; }
+
 
   // Suspends the current thread if a suspension is in progress.
   static void yield();

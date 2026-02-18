@@ -3791,6 +3791,9 @@ void CMSCollector::checkpointRootsInitialWork(bool asynch) {
   verify_overflow_empty();
 }
 
+
+
+
 bool CMSCollector::markFromRoots(bool asynch) {
   // we might be tempted to assert that:
   // assert(asynch == !SafepointSynchronize::is_at_safepoint(),
@@ -3850,6 +3853,9 @@ bool CMSCollector::markFromRoots(bool asynch) {
   verify_overflow_empty();
   return res;
 }
+
+
+
 
 bool CMSCollector::markFromRootsWork(bool asynch) {
   // iterate over marked bits in bit map, doing a full scan and mark

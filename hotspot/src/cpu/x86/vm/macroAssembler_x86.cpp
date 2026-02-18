@@ -39,6 +39,7 @@
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/ostream.hpp"
 #if INCLUDE_ALL_GCS
 #include "gc_implementation/g1/g1CollectedHeap.inline.hpp"
 #include "gc_implementation/g1/g1SATBCardTableModRefBS.hpp"
@@ -4159,6 +4160,10 @@ void MacroAssembler::clear_jweak_tag(Register possibly_jweak) {
 //////////////////////////////////////////////////////////////////////////////////
 #if INCLUDE_ALL_GCS
 
+
+
+
+// 前屏障，SATB的实现关键
 void MacroAssembler::g1_write_barrier_pre(Register obj,
                                           Register pre_val,
                                           Register thread,
@@ -4177,13 +4182,19 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
   Label done;
   Label runtime;
 
-  assert(pre_val != noreg, "check this code");
 
+  // 先不看这些断言
+  assert(pre_val != noreg, "check this code");
   if (obj != noreg) {
     assert_different_registers(obj, pre_val, tmp);
     assert(pre_val != rax, "check this code");
   }
 
+
+  // 注意这是线程维度的，所以代码敢这么直接拿不用考虑同步加锁的问题
+  // in_progress: 线程维度satb内部的ptrQueue模型的_active字段
+  // _index: 线程维度satb内部的ptrQueue模型的_index字段，意为当前下标到哪里了
+  // buffer: 线程维度satb内部的ptrQueue模型的_buf字段，这是个数组，即对应的数据存储
   Address in_progress(thread, in_bytes(JavaThread::satb_mark_queue_offset() +
                                        PtrQueue::byte_offset_of_active()));
   Address index(thread, in_bytes(JavaThread::satb_mark_queue_offset() +
@@ -4194,8 +4205,10 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
 
   // Is marking active?
   if (in_bytes(PtrQueue::byte_width_of_active()) == 4) {
+    tty->print_cr("AAAAAAAAAAAAAAAAAAAAAAA");
     cmpl(in_progress, 0);
   } else {
+    tty->print_cr("BBBBBBBBBBBBBBBBBBBBBBB");
     assert(in_bytes(PtrQueue::byte_width_of_active()) == 1, "Assumption");
     cmpb(in_progress, 0);
   }
