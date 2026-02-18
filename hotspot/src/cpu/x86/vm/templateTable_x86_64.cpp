@@ -36,6 +36,7 @@
 #include "runtime/stubRoutines.hpp"
 #include "runtime/synchronizer.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/ostream.hpp"
 
 #ifndef CC_INTERP
 
@@ -135,6 +136,7 @@ static void do_oop_store(InterpreterMacroAssembler* _masm,
                          Register val,
                          BarrierSet::Name barrier,
                          bool precise) {
+  tty->print_cr("??????????????");
   assert(val == noreg || val == rax, "parameter is just for looks");
   switch (barrier) {
 #if INCLUDE_ALL_GCS

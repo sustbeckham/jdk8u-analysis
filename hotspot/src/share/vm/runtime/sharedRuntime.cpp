@@ -219,6 +219,12 @@ void SharedRuntime::print_ic_miss_histogram() {
 
 #if INCLUDE_ALL_GCS
 
+
+
+
+// *** 从macroAssembler_x86.cpp的g1_write_barrier_pre调用而来
+// *** satb_mark_queue()的内部是个ObjPtrQueue模型
+// *** 这里的orig是实际修改前的值，将修改前的值入线程私有的SATB队列
 // G1 write-barrier pre: executed before a pointer store.
 JRT_LEAF(void, SharedRuntime::g1_wb_pre(oopDesc* orig, JavaThread *thread))
   if (orig == NULL) {
@@ -226,6 +232,7 @@ JRT_LEAF(void, SharedRuntime::g1_wb_pre(oopDesc* orig, JavaThread *thread))
     return;
   }
   assert(orig->is_oop(true /* ignore mark word */), "Error");
+
   // store the original value that was in the field reference
   thread->satb_mark_queue().enqueue(orig);
 JRT_END

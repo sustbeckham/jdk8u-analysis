@@ -4164,6 +4164,7 @@ void MacroAssembler::clear_jweak_tag(Register possibly_jweak) {
 
 
 // 前屏障，SATB的实现关键
+// 更上层的调用应该来自于templateTable_x86_64.cpp#do_oop_store
 void MacroAssembler::g1_write_barrier_pre(Register obj,
                                           Register pre_val,
                                           Register thread,
@@ -4215,11 +4216,14 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
   jcc(Assembler::equal, done);
 
 
+  // 将指定的src地址给到指定寄存器(压缩指针情况下会恢复64位完整地址)
   // Do we need to load the previous value?
   if (obj != noreg) {
     load_heap_oop(pre_val, Address(obj, 0));
   }
 
+
+  // 如果修改前的值是空，那没必要继续了，跳出
   // Is the previous value null?
   cmpptr(pre_val, (int32_t) NULL_WORD);
   jcc(Assembler::equal, done);
@@ -4240,7 +4244,12 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
   movptr(Address(tmp, 0), pre_val);
   jmp(done);
 
+
+  // runtime分支从这里开始
   bind(runtime);
+
+
+  // *** 下面三段是为了保护参数的(临时push保存)，特别是rax，确保不被覆盖，不做重点关注
   // save the live input values
   if(tosca_live) push(rax);
 
@@ -4262,19 +4271,28 @@ void MacroAssembler::g1_write_barrier_pre(Register obj,
   // So when we do not have have a full interpreter frame on the stack
   // expand_call should be passed true.
 
+  // *** 非64位的代码这里跳过
   NOT_LP64( push(thread); )
 
+
+  // *** 这里可以不用过于纠结expand_call这个参数，这里的本质都是一样，都是执行SharedRuntime::g1_wb_pre这个函数，只不过调用方式有差异
+  // *** 这里的pre_val是实际修改前的值，将修改前的值入线程私有的SATB队列
   if (expand_call) {
     LP64_ONLY( assert(pre_val != c_rarg1, "smashed arg"); )
     pass_arg1(this, thread);
     pass_arg0(this, pre_val);
+    // 这里的2应该是代表有2个参数的意思
     MacroAssembler::call_VM_leaf_base(CAST_FROM_FN_PTR(address, SharedRuntime::g1_wb_pre), 2);
   } else {
     call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::g1_wb_pre), pre_val, thread);
   }
 
+
+  // *** 非64位的代码这里跳过
   NOT_LP64( pop(thread); )
 
+
+  // *** 下面三段是为了保护参数的(临时pop释放)，特别是rax，确保不被覆盖，不做重点关注
   // save the live input values
   if (pre_val != rax)
     pop(pre_val);
@@ -5818,12 +5836,14 @@ void MacroAssembler::store_klass(Register dst, Register src) {
 
 
 
+// 将指定的src地址给到指定寄存器(压缩指针情况下会恢复64位完整地址)
 void MacroAssembler::load_heap_oop(Register dst, Address src) {
 #ifdef _LP64
   // FIXME: Must change all places where we try to load the klass.
   if (UseCompressedOops) {
     // 走这个分支
     movl(dst, src);
+    // 将已经压缩后的指针恢复到64位正常的地址
     decode_heap_oop(dst);
   } else
 #endif
@@ -5978,6 +5998,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
 
 
 
+// 将已经压缩后的指针恢复到64位正常的地址
 void  MacroAssembler::decode_heap_oop(Register r) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::decode_heap_oop: heap base corrupted?");
@@ -5985,14 +6006,13 @@ void  MacroAssembler::decode_heap_oop(Register r) {
 
 
   if (Universe::narrow_oop_base() == NULL) {
-    tty->print_cr("AAAAAAAAAAA");
     if (Universe::narrow_oop_shift() != 0) {
-      tty->print_cr("BBBBBBBBBB");
+      // *** 走这个分支
+      // *** LogMinObjAlignmentInBytes=3
       assert (LogMinObjAlignmentInBytes == Universe::narrow_oop_shift(), "decode alg wrong");
       shlq(r, LogMinObjAlignmentInBytes);
     }
   } else {
-    tty->print_cr("CCCCCCCCC");
     Label done;
     shlq(r, LogMinObjAlignmentInBytes);
     jccb(Assembler::equal, done);
