@@ -64,6 +64,11 @@ void PtrQueue::enqueue_known_active(void* ptr) {
   assert(0 <= _index && _index <= _sz, "Invariant.");
   assert(_index == 0 || _buf != NULL, "invariant");
 
+  if (_lock) {
+   tty->print_cr("AAAAAAAAAAAAAAAAAA");
+  }else{
+   tty->print_cr("BBBBBBBBBBBBBBBBBB");
+  }
 
   // 处理队列满了的情况
   while (_index == 0) {
@@ -152,7 +157,7 @@ void PtrQueueSet::reduce_free_list() {
 
 
 
-// 处理队列满了的情况
+// 处理队列满了的情况(代码实测这个方法不太好走进来，毕竟简单用例有点难满足这个场景)
 void PtrQueue::handle_zero_index() {
   assert(_index == 0, "Precondition.");
 
@@ -169,9 +174,7 @@ void PtrQueue::handle_zero_index() {
 
 
     // *** C++中，指针可以直接用在if条件中，这里其实等价于if(_lock != NULL)
-    tty->print_cr("AAAAAAAAAA");
     if (_lock) {
-      tty->print_cr("BBBBBBBBBBB");
       assert(_lock->owned_by_self(), "Required.");
 
       // The current PtrQ may be the shared dirty card queue and
