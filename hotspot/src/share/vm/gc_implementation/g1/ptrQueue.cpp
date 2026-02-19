@@ -29,6 +29,7 @@
 #include "runtime/mutex.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/thread.inline.hpp"
+#include "utilities/ostream.hpp"
 
 PtrQueue::PtrQueue(PtrQueueSet* qset, bool perm, bool active) :
   _qset(qset), _buf(NULL), _index(0), _sz(0), _active(active),
@@ -155,6 +156,9 @@ void PtrQueueSet::reduce_free_list() {
 void PtrQueue::handle_zero_index() {
   assert(_index == 0, "Precondition.");
 
+  // 这里的注释其实算是当前函数的综述:
+  // *** 1. 将当前已经满的buffer数据记录下来(实际记录到全局buffer里)
+  // *** 2. 为当前线程重新分配新的buffer数据内存区域
   // This thread records the full buffer and allocates a new one (while
   // holding the lock if there is one).
   if (_buf != NULL) {
@@ -163,7 +167,11 @@ void PtrQueue::handle_zero_index() {
       return;
     }
 
+
+    // *** C++中，指针可以直接用在if条件中，这里其实等价于if(_lock != NULL)
+    tty->print_cr("AAAAAAAAAA");
     if (_lock) {
+      tty->print_cr("BBBBBBBBBBB");
       assert(_lock->owned_by_self(), "Required.");
 
       // The current PtrQ may be the shared dirty card queue and
@@ -247,6 +255,8 @@ void PtrQueueSet::enqueue_complete_buffer(void** buf, size_t index) {
   }
   _n_completed_buffers++;
 
+
+  // 这里_process_completed赋值为true其实是堆积了的意思
   if (!_process_completed && _process_completed_threshold >= 0 &&
       _n_completed_buffers >= _process_completed_threshold) {
     _process_completed = true;

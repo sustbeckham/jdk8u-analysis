@@ -905,15 +905,25 @@ public:
   bool verbose_stats() {
     return _verbose_level >= stats_verbose;
   }
+
+
+  // _MARKING_VERBOSE_未定义，此处直接认为返回false就好
   bool verbose_low() {
     return _MARKING_VERBOSE_ && _verbose_level >= low_verbose;
   }
+
+
+  // _MARKING_VERBOSE_未定义，此处直接认为返回false就好
   bool verbose_medium() {
     return _MARKING_VERBOSE_ && _verbose_level >= medium_verbose;
   }
+
+
+  // _MARKING_VERBOSE_未定义，此处直接认为返回false就好
   bool verbose_high() {
     return _MARKING_VERBOSE_ && _verbose_level >= high_verbose;
   }
+
 
   // Liveness counting
 
@@ -1022,12 +1032,18 @@ protected:
 class CMTask : public TerminatorTerminator {
 private:
   enum PrivateConstants {
+    // *** 每扫描12288个HeapWord*就会触发regular_clock_call()看流程是否要终止
     // the regular clock call is called once the scanned words reaches
     // this limit
     words_scanned_period          = 12*1024,
+
+
+    // *** 每扫描384个引用就会触发regular_clock_call()看流程是否要终止
     // the regular clock call is called once the number of visited
     // references reaches this limit
     refs_reached_period           = 384,
+
+
     // initial value for the hash seed, used in the work stealing code
     init_hash_seed                = 17,
     // how many entries will be transferred between global stack and
@@ -1091,14 +1107,25 @@ private:
 
   // used by the work stealing stuff
   int                         _hash_seed;
+
+
+  // 如果为true，则意味着由于某些原因当前任务终止了
   // if this is true, then the task has aborted for some reason
   bool                        _has_aborted;
+
+
+  // 由于超时而导致任务终止
   // set when the task aborts because it has met its time quota
   bool                        _has_timed_out;
+
+
+  // 正在处理SATB的标志位
+  // *** 在CMTask::drain_satb_buffers()会开始处理SATB
   // true when we're draining SATB buffers; this avoids the task
   // aborting due to SATB buffers being available (as we're already
   // dealing with them)
   bool                        _draining_satb_buffers;
+
 
   // number sequence of past step times
   NumberSeq                   _step_times_ms;
@@ -1113,6 +1140,9 @@ private:
   // in the remark phase (so, in the latter case, we do not have to
   // check all the things that we have to check during the concurrent
   // phase, i.e. SATB buffer availability...)
+  //
+  // 简单来说，该字段代表了CMTask是否和应用线程并发运行。并发标记是和应用线程一起跑的所以_concurrent=true。
+  // 而最终标记阶段是STW的所以_concurrent=false。
   bool                        _concurrent;
 
   TruncatedSeq                _marking_step_diffs_ms;
@@ -1235,7 +1265,11 @@ public:
 
   bool has_aborted()            { return _has_aborted; }
   void set_has_aborted()        { _has_aborted = true; }
+
+
   void clear_has_aborted()      { _has_aborted = false; }
+
+
   bool has_timed_out()          { return _has_timed_out; }
   bool claimed()                { return _claimed; }
 

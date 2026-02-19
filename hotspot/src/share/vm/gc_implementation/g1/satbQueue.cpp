@@ -283,6 +283,9 @@ void SATBMarkQueueSet::filter_thread_buffers() {
   shared_satb_queue()->filter();
 }
 
+
+
+
 bool SATBMarkQueueSet::apply_closure_to_completed_buffer(SATBBufferClosure* cl) {
   BufferNode* nd = NULL;
   {
@@ -315,6 +318,9 @@ bool SATBMarkQueueSet::apply_closure_to_completed_buffer(SATBBufferClosure* cl) 
     return false;
   }
 }
+
+
+
 
 #ifndef PRODUCT
 // Helpful for debugging

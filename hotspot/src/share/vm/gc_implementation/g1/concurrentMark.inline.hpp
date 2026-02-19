@@ -254,6 +254,9 @@ inline bool CMBitMap::parClear(HeapWord* addr) {
 
 #undef check_mark
 
+
+
+
 inline void CMTask::push(oop obj) {
   HeapWord* objAddr = (HeapWord*) obj;
   assert(_g1h->is_in_g1_reserved(objAddr), "invariant");
@@ -291,6 +294,9 @@ inline void CMTask::push(oop obj) {
              ++_local_pushes );
 }
 
+
+
+
 inline bool CMTask::is_below_finger(oop obj, HeapWord* global_finger) const {
   // If obj is above the global finger, then the mark bitmap scan
   // will find it later, and no push is needed.  Similarly, if we have
@@ -320,6 +326,9 @@ inline bool CMTask::is_below_finger(oop obj, HeapWord* global_finger) const {
   // Check global finger.
   return objAddr < global_finger;
 }
+
+
+
 
 inline void CMTask::make_reference_grey(oop obj, HeapRegion* hr) {
   if (_cm->par_mark_and_count(obj, hr, _marked_bytes_array, _card_bm)) {
@@ -372,6 +381,9 @@ inline void CMTask::make_reference_grey(oop obj, HeapRegion* hr) {
     }
   }
 }
+
+
+
 
 inline void CMTask::deal_with_reference(oop obj) {
   if (_cm->verbose_high()) {

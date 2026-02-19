@@ -238,6 +238,9 @@ MemRegion CMBitMap::getAndClearMarkedRegion(HeapWord* addr,
   return mr;
 }
 
+
+
+
 CMMarkStack::CMMarkStack(ConcurrentMark* cm) :
   _base(NULL), _cm(cm)
 #ifdef ASSERT
@@ -1420,6 +1423,8 @@ void ConcurrentMark::markFromRoots() {
 
   uint active_workers = MAX2(1U, parallel_marking_threads());
 
+
+  // *** 此处是并发标记阶段，并发标记线程可以和应用线程并发执行，所以该字段为true
   // Parallel task terminator is set in "set_concurrency_and_phase()"
   set_concurrency_and_phase(active_workers, true /* concurrent */);
 
@@ -2960,6 +2965,8 @@ void ConcurrentMark::checkpointRootsFinalWork() {
       active_workers = (uint) ParallelGCThreads;
       g1h->workers()->set_active_workers(active_workers);
     }
+
+    // *** FinalRemark阶段是STW的，所以这里的并发标记是false，即不能和应用程序并发执行
     set_concurrency_and_phase(active_workers, false /* concurrent */);
     // Leave _parallel_marking_threads at it's
     // value originally calculated in the ConcurrentMark
@@ -2976,6 +2983,8 @@ void ConcurrentMark::checkpointRootsFinalWork() {
   } else {
     G1CollectedHeap::StrongRootsScope srs(g1h);
     uint active_workers = 1;
+
+    // *** FinalRemark阶段是STW的，所以这里的并发标记是false，即不能和应用程序并发执行
     set_concurrency_and_phase(active_workers, false /* concurrent */);
 
     // Note - if there's no work gang then the VMThread will be
@@ -3742,6 +3751,9 @@ inline void CMTask::process_grey_object(oop obj) {
 template void CMTask::process_grey_object<true>(oop);
 template void CMTask::process_grey_object<false>(oop);
 
+
+
+
 // Closure for iteration over bitmaps
 class CMBitMapClosure : public BitMapClosure {
 private:
@@ -3775,6 +3787,9 @@ public:
     return !_task->has_aborted();
   }
 };
+
+
+
 
 G1CMOopClosure::G1CMOopClosure(G1CollectedHeap* g1h,
                                ConcurrentMark* cm,
@@ -3847,15 +3862,23 @@ void CMTask::update_region_limit() {
 
 
 
+// 将Region相关的三个参数(_curr_region/_finger/_region_limit)设置为空，代表当前CMTask未持有region
 void CMTask::giveup_current_region() {
   assert(_curr_region != NULL, "invariant");
   if (_cm->verbose_low()) {
     gclog_or_tty->print_cr("[%u] giving up region " PTR_FORMAT,
                            _worker_id, p2i(_curr_region));
   }
+
+
+  // 将Region相关的三个参数(_curr_region/_finger/_region_limit)设置为空，代表当前CMTask未持有region
   clear_region_fields();
 }
 
+
+
+
+// 将Region相关的三个参数(_curr_region/_finger/_region_limit)设置为空，代表当前CMTask未持有region
 void CMTask::clear_region_fields() {
   // Values for these three fields that indicate that we're not
   // holding on to a region.
@@ -3913,7 +3936,11 @@ void CMTask::reset(CMBitMap* nextMarkBitMap) {
 #endif // _MARKING_STATS_
 }
 
+
+
+
 bool CMTask::should_exit_termination() {
+  // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
   regular_clock_call();
   // This is called when we are in the termination protocol. We should
   // quit if, for some reason, this task wants to abort or the global
@@ -3921,22 +3948,37 @@ bool CMTask::should_exit_termination() {
   return !_cm->mark_stack_empty() || has_aborted();
 }
 
+
+
+
 void CMTask::reached_limit() {
   assert(_words_scanned >= _words_scanned_limit ||
          _refs_reached >= _refs_reached_limit ,
          "shouldn't have been called otherwise");
+  // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
   regular_clock_call();
 }
 
+
+
+
+// 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
 void CMTask::regular_clock_call() {
+  // *** 防御性判断，已经abort就不再继续了
+  // *** 除了regular_clock_call函数内部会有abort的行为之外，其他地方还有3个，先按下不表
   if (has_aborted()) return;
 
+
+  // 重新计算相关统计的阈值，为了下一次regular_clock_call再次调用做数据判断
   // First, we need to recalculate the words scanned and refs reached
   // limits for the next clock call.
   recalculate_limits();
 
+
   // During the regular clock call we do the following
 
+
+  // *** 全局标记栈溢出，当前任务终止
   // (1) If an overflow has been flagged, then we abort.
   if (_cm->has_overflown()) {
     set_has_aborted();
@@ -3957,6 +3999,8 @@ void CMTask::regular_clock_call() {
 
   double curr_time_ms = os::elapsedVTime() * 1000.0;
 
+
+  // *** 这个阶段不看，因为_MARKING_STATS_在concurrentMark.hpp中默认定义的是0
   // (3) If marking stats are enabled, then we update the step history.
 #if _MARKING_STATS_
   if (_words_scanned >= _words_scanned_limit) {
@@ -3981,6 +4025,8 @@ void CMTask::regular_clock_call() {
   }
 #endif // _MARKING_STATS_
 
+
+  // *** 是否已经有外部线程统筹全局挂起，比如safepoint ***
   // (4) We check whether we should yield. If we have to, then we abort.
   if (SuspendibleThreadSet::should_yield()) {
     // We should yield. To do this we abort the task. The caller is
@@ -3989,6 +4035,7 @@ void CMTask::regular_clock_call() {
     statsOnly( ++_aborted_yield );
     return;
   }
+
 
   // (5) We check whether we've reached our time quota. If we have,
   // then we abort.
@@ -4000,8 +4047,12 @@ void CMTask::regular_clock_call() {
     return;
   }
 
+
   // (6) Finally, we check whether there are enough completed STAB
   // buffers available for processing. If there are, we abort.
+  // *** process_completed_buffers返回true其实意思是全局set的堆积数量已经超出了阈值，要尽快处理
+  // *** _draining_satb_buffers还得再看.... TODO
+  // 总之之类的本意就是堆积了要优先处理SATB队列
   SATBMarkQueueSet& satb_mq_set = JavaThread::satb_mark_queue_set();
   if (!_draining_satb_buffers && satb_mq_set.process_completed_buffers()) {
     if (_cm->verbose_low()) {
@@ -4016,13 +4067,24 @@ void CMTask::regular_clock_call() {
   }
 }
 
+
+
+
+// 在初始情况下，定义了2个条件:
+// 每扫描12288个HeapWord*就会触发regular_clock_call()看流程是否要终止
+// 每扫描384个引用就会触发regular_clock_call()看流程是否要终止
 void CMTask::recalculate_limits() {
+  // *** words_scanned_period是个常量=12*1024=12288
   _real_words_scanned_limit = _words_scanned + words_scanned_period;
   _words_scanned_limit      = _real_words_scanned_limit;
 
+  // *** refs_reached_period是个常量=384
   _real_refs_reached_limit  = _refs_reached  + refs_reached_period;
   _refs_reached_limit       = _real_refs_reached_limit;
 }
+
+
+
 
 void CMTask::decrease_limits() {
   // This is called when we believe that we're going to do an infrequent
@@ -4039,6 +4101,9 @@ void CMTask::decrease_limits() {
   _refs_reached_limit  = _real_refs_reached_limit -
     3 * refs_reached_period / 4;
 }
+
+
+
 
 void CMTask::move_entries_to_global_stack() {
   // local array where we'll store the entries that will be popped
@@ -4081,6 +4146,9 @@ void CMTask::move_entries_to_global_stack() {
   // this operation was quite expensive, so decrease the limits
   decrease_limits();
 }
+
+
+
 
 void CMTask::get_entries_from_global_stack() {
   // local array where we'll store the entries that will be popped
@@ -4211,17 +4279,28 @@ void CMTask::drain_global_stack(bool partially) {
 // replicated. We should really get rid of the single-threaded version
 // of the code to simplify things.
 void CMTask::drain_satb_buffers() {
+
+  // 终止不继续，老套路了
   if (has_aborted()) return;
 
+
+  // 全局标记告诉regular_clock_call说，我现在正在处理stab进行中
   // We set this so that the regular clock knows that we're in the
   // middle of draining buffers and doesn't set the abort flag when it
   // notices that SATB buffers are available for draining. It'd be
   // very counter productive if it did that. :-)
   _draining_satb_buffers = true;
 
+
+  // 这个闭包的核心处理下面来说
   CMSATBBufferClosure satb_cl(this, _g1h);
+
+
+  // 注意这里是全局的STAB
   SATBMarkQueueSet& satb_mq_set = JavaThread::satb_mark_queue_set();
 
+
+  // *** 不终止的情况下持续的执行apply_closure_to_completed_buffer
   // This keeps claiming and applying the closure to completed buffers
   // until we run out of buffers or we need to abort.
   while (!has_aborted() &&
@@ -4230,10 +4309,16 @@ void CMTask::drain_satb_buffers() {
       gclog_or_tty->print_cr("[%u] processed an SATB buffer", _worker_id);
     }
     statsOnly( ++_satb_buffers_processed );
+
+
+    // 频繁的检查是否要终止流程
     regular_clock_call();
   }
 
+
+  // STAB处理完成
   _draining_satb_buffers = false;
+
 
   assert(has_aborted() ||
          concurrent() ||
@@ -4425,40 +4510,61 @@ void CMTask::do_marking_step(double time_target_ms,
   // possible for two threads to set the _claimed flag at the same
   // time. But it is only for debugging purposes anyway and it will
   // catch most problems.
+  // *** 从注释来看，这是个调试用的玩意儿，那就先不管它
   _claimed = true;
 
+
+  // 数据统计的也跳过
   _start_time_ms = os::elapsedVTime() * 1000.0;
   statsOnly( _interval_start_time_ms = _start_time_ms );
+
 
   // If do_stealing is true then do_marking_step will attempt to
   // steal work from the other CMTasks. It only makes sense to
   // enable stealing when the termination protocol is enabled
   // and do_marking_step() is not being called serially.
+  // *** 此处为工作窃取逻辑(在正常的并发标记这个阶段认为是生效的就好，有其它场景还会调用这个do_marking_step函数的边界场景再说 TODO)
+  // *** 如果为单线程情况下，is_serial为true，此时单个线程也就存在窃取的逻辑了，这个很好懂
+  // *** 默认启用的情况下，当前线程执行完自己的全部任务后，会尝试调用try_stealing函数来窃取其他线程的任务，最大程度利用多线程
   bool do_stealing = do_termination && !is_serial;
 
+
+  // G1的预测模型，后续作为专题看 TODO
   double diff_prediction_ms =
     g1_policy->get_new_prediction(&_marking_step_diffs_ms);
   _time_target_ms = time_target_ms - diff_prediction_ms;
 
+
+  // 在初始情况下，定义了2个条件:
+  // *** 每扫描12288个HeapWord*就会触发regular_clock_call()看流程是否要终止
+  // *** 每扫描384个引用就会触发regular_clock_call()看流程是否要终止
   // set up the variables that are used in the work-based scheme to
   // call the regular clock method
   _words_scanned = 0;
   _refs_reached  = 0;
   recalculate_limits();
 
+
+  // 标记清理，准备开工(含超时标志位和SATB处理标志位)
   // clear all flags
   clear_has_aborted();
   _has_timed_out = false;
   _draining_satb_buffers = false;
 
+
+  // 统计使用，可不关心
   ++_calls;
 
+
+  // _MARKING_VERBOSE_未定义，此处直接认为返回false就好
   if (_cm->verbose_low()) {
     gclog_or_tty->print_cr("[%u] >>>>>>>>>> START, call = %d, "
                            "target = %1.2lfms >>>>>>>>>>",
                            _worker_id, _calls, _time_target_ms);
   }
 
+
+  // 这2个闭包先按下不表，后面会说
   // Set up the bitmap and oop closures. Anything that uses them is
   // eventually called from this method, so it is OK to allocate these
   // statically.
@@ -4466,6 +4572,10 @@ void CMTask::do_marking_step(double time_target_ms,
   G1CMOopClosure  cm_oop_closure(_g1h, _cm, this);
   set_cm_oop_closure(&cm_oop_closure);
 
+
+  // *** 这里的底层实际上是在看全局共享标记栈(CMMarkStack)。并发标记的时候会这个栈会暂存对象引用
+  // *** 这里一般挺难溢出的，除非遇到那种对象字段引用较多的场景之类的，如果溢出需优先处理
+  // *** 内部的串联可以再看下，还是没吃透 TODO
   if (_cm->has_overflown()) {
     // This can happen if the mark stack overflows during a GC pause
     // and this task, after a yield point, restarts. We have to abort
@@ -4473,6 +4583,7 @@ void CMTask::do_marking_step(double time_target_ms,
     // right at the end of this task.
     set_has_aborted();
   }
+
 
   // First drain any available SATB buffers. After this, we will not
   // look at SATB buffers before the next invocation of this method.
@@ -4486,6 +4597,7 @@ void CMTask::do_marking_step(double time_target_ms,
 
   // [非常重要]从此处开始，扫描堆内存，标记存活对象
   do {
+    // *** has_aborted()确保当前流程没有被其它外部因素影响说得暂停给其他事情让路
     if (!has_aborted() && _curr_region != NULL) {
       // This means that we're already holding on to a region.
       assert(_finger != NULL, "if region is not NULL, then the finger "
@@ -4525,20 +4637,34 @@ void CMTask::do_marking_step(double time_target_ms,
       // that is left.
       // If the iteration is successful, give up the region.
       if (mr.is_empty()) {
+
+        // 将Region相关的三个参数(_curr_region/_finger/_region_limit)设置为空，代表当前CMTask未持有region
         giveup_current_region();
+
+        // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
         regular_clock_call();
+
       } else if (_curr_region->isHumongous() && mr.start() == _curr_region->bottom()) {
         if (_nextMarkBitMap->isMarked(mr.start())) {
           // The object is marked - apply the closure
           BitMap::idx_t offset = _nextMarkBitMap->heapWordToOffset(mr.start());
           bitmap_closure.do_bit(offset);
         }
+
         // Even if this task aborted while scanning the humongous object
         // we can (and should) give up the current region.
+        // 将Region相关的三个参数(_curr_region/_finger/_region_limit)设置为空，代表当前CMTask未持有region
         giveup_current_region();
+
+        // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
         regular_clock_call();
+
       } else if (_nextMarkBitMap->iterate(&bitmap_closure, mr)) {
+
+        // 将Region相关的三个参数(_curr_region/_finger/_region_limit)设置为空，代表当前CMTask未持有region
         giveup_current_region();
+
+        // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
         regular_clock_call();
       } else {
         assert(has_aborted(), "currently the only way to do so");
@@ -4566,6 +4692,8 @@ void CMTask::do_marking_step(double time_target_ms,
         }
       }
     }
+
+
     // At this point we have either completed iterating over the
     // region we were holding on to, or we have aborted.
 
@@ -4607,6 +4735,7 @@ void CMTask::do_marking_step(double time_target_ms,
       // block of empty regions. So we need to call the regular clock
       // method once round the loop to make sure it's called
       // frequently enough.
+      // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
       regular_clock_call();
     }
 
@@ -4681,6 +4810,7 @@ void CMTask::do_marking_step(double time_target_ms,
   if (do_termination && !has_aborted()) {
     if (_cm->force_overflow()->should_force()) {
       _cm->set_has_overflown();
+      // 判断当前是否还要继续进行CMTask任务, 如遇到超时，safepoint，SATB堆积等要终止任务
       regular_clock_call();
     }
   }

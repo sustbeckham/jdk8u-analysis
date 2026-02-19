@@ -197,15 +197,23 @@ public:
   static BufferNode* make_node_from_buffer(void** buf) {
     return (BufferNode*)make_block_from_buffer(buf);
   }
+
+
   static void** make_buffer_from_node(BufferNode *node) {
     return make_buffer_from_block(node);
   }
+
+
   static void* make_block_from_node(BufferNode *node) {
     return (void*)node;
   }
+
+
   static void** make_buffer_from_block(void* p) {
     return (void**)((char*)p + aligned_size());
   }
+
+
   static void* make_block_from_buffer(void** p) {
     return (void*)((char*)p - aligned_size());
   }
@@ -305,8 +313,11 @@ public:
     return _n_completed_buffers > 0;
   }
 
+
+  // 如果是STAB情况下，_process_completed的赋值实际上是没有通过set_process_completed进行，而是直接字段赋值的，务必留意
   bool process_completed_buffers() { return _process_completed; }
   void set_process_completed(bool x) { _process_completed = x; }
+
 
   bool is_active() { return _all_active; }
 
