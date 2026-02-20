@@ -51,8 +51,12 @@ protected:
   // Whether updates should be logged.
   bool _active;
 
+
+  // 可以理解为实际存储数据的地方
   // The buffer.
   void** _buf;
+
+
   // The index at which an object was last enqueued.  Starts at "_sz"
   // (indicating an empty buffer) and goes towards zero.
   size_t _index;
@@ -188,10 +192,12 @@ public:
   // BufferNode is allocated before the buffer.
   // The chunk of memory that holds both of them is a block.
 
+
   // Produce a new BufferNode given a buffer.
   static BufferNode* new_from_buffer(void** buf) {
     return new (make_block_from_buffer(buf)) BufferNode;
   }
+
 
   // The following are the required conversion routines:
   static BufferNode* make_node_from_buffer(void** buf) {
@@ -231,18 +237,34 @@ protected:
   Monitor* _cbl_mon;  // Protects the fields below.
   BufferNode* _completed_buffers_head;
   BufferNode* _completed_buffers_tail;
+
+
+  // 看起来可以理解为所有链表累加的长度，即链表元素的个数
   int _n_completed_buffers;
+
+
   int _process_completed_threshold;
+
+
+  // 当前全局队列数据超出阈值，堆积了
   volatile bool _process_completed;
+
 
   // This (and the interpretation of the first element as a "next"
   // pointer) are protected by the TLOQ_FL_lock.
   Mutex* _fl_lock;
+
+
+  // 可复用的空闲列表。这意味着STAB处理完之后的缓冲区内存不会回收，会到这里。
   BufferNode* _buf_free_list;
+
+  // 客服用的空闲列表中的缓冲区个数
   size_t _buf_free_list_sz;
+
   // Queue set can share a freelist. The _fl_owner variable
   // specifies the owner. It is set to "this" by default.
   PtrQueueSet* _fl_owner;
+
 
   // The size of all buffers in the set.
   size_t _sz;
@@ -277,7 +299,8 @@ public:
 
 
 
-  // 如果是G1的DCQS创建，同时假设是8核，则这里的process_completed_threshold=24，max_completed_queue=48。
+  // *** 如果是G1的DCQS创建，同时假设是8核，则这里的process_completed_threshold=24，max_completed_queue=48。
+  // *** 如果是G1的SATB全局队列，process_completed_threshold的默认值为20，max_completed_queue的值为-1。
   // Because of init-order concerns, we can't pass these as constructor
   // arguments.
   void initialize(Monitor* cbl_mon, Mutex* fl_lock,

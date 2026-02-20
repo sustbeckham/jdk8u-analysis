@@ -216,12 +216,20 @@ SATBMarkQueueSet::SATBMarkQueueSet() :
   PtrQueueSet(),
   _shared_satb_queue(this, true /*perm*/) { }
 
+
+
+
+// *** 从g1CollectedHeap.cpp初始化而来
+// *** process_completed_threshold的默认值依赖于G1SATBProcessCompletedThreshold，默认值为20
 void SATBMarkQueueSet::initialize(Monitor* cbl_mon, Mutex* fl_lock,
                                   int process_completed_threshold,
                                   Mutex* lock) {
   PtrQueueSet::initialize(cbl_mon, fl_lock, process_completed_threshold, -1);
   _shared_satb_queue.set_lock(lock);
 }
+
+
+
 
 void SATBMarkQueueSet::handle_zero_index_for_thread(JavaThread* t) {
   t->satb_mark_queue().handle_zero_index();

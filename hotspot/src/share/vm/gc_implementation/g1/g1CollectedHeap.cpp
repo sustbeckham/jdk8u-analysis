@@ -2160,6 +2160,9 @@ jint G1CollectedHeap::initialize() {
   // Perform any initialization actions delegated to the policy.
   g1_policy()->init();
 
+
+  // *** 初始化动作具体去到satbQueue.cpp下的SATBMarkQueueSet::initialize
+  // *** G1SATBProcessCompletedThreshold的默认值为20
   JavaThread::satb_mark_queue_set().initialize(SATB_Q_CBL_mon,
                                                SATB_Q_FL_lock,
                                                G1SATBProcessCompletedThreshold,

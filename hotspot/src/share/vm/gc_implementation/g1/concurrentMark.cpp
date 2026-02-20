@@ -665,8 +665,11 @@ ConcurrentMark::ConcurrentMark(G1CollectedHeap* g1h, G1RegionToSpaceMapper* prev
   assert(_markBitMap1.covers(g1h->reserved_region()), "_markBitMap1 inconsistency");
   assert(_markBitMap2.covers(g1h->reserved_region()), "_markBitMap2 inconsistency");
 
+
+  // G1SATBBufferSize默认大小为1024
   SATBMarkQueueSet& satb_qs = JavaThread::satb_mark_queue_set();
   satb_qs.set_buffer_size(G1SATBBufferSize);
+
 
   _root_regions.init(_g1h, this);
 
