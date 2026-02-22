@@ -2844,6 +2844,9 @@ void ConcurrentMark::swapMarkBitMaps() {
   _nextMarkBitMap  = (CMBitMap*)  temp;
 }
 
+
+
+
 // Closure for marking entries in SATB buffers.
 class CMSATBBufferClosure : public SATBBufferClosure {
 private:
@@ -2857,6 +2860,8 @@ private:
     _task->increment_refs_reached();
     HeapRegion* hr = _g1h->heap_region_containing_raw(entry);
     if (entry < hr->next_top_at_mark_start()) {
+
+      // *** 能进入这个分支，证明当前entry对象是在[bottom, tams]的范围之内，按照G1的约定，也只会处理这个范围
       // Until we get here, we don't know whether entry refers to a valid
       // object; it could instead have been a stale reference.
       oop obj = static_cast<oop>(entry);
@@ -2870,12 +2875,18 @@ public:
   CMSATBBufferClosure(CMTask* task, G1CollectedHeap* g1h)
     : _task(task), _g1h(g1h) { }
 
+
+  // *** 暂定SATBMarkQueueSet::apply_closure_to_completed_buffer最终执行到了这里
   virtual void do_buffer(void** buffer, size_t size) {
+    // 前序有过判空，这里无脑执行就好了
     for (size_t i = 0; i < size; ++i) {
       do_entry(buffer[i]);
     }
   }
 };
+
+
+
 
 class G1RemarkThreadsClosure : public ThreadClosure {
   CMSATBBufferClosure _cm_satb_cl;
@@ -3736,20 +3747,29 @@ inline void CMTask::process_grey_object(oop obj) {
   assert(scan || obj->is_typeArray(), "Skipping scan of grey non-typeArray");
   assert(_nextMarkBitMap->isMarked((HeapWord*) obj), "invariant");
 
+
+  // 这里不执行
   if (_cm->verbose_high()) {
     gclog_or_tty->print_cr("[%u] processing grey object " PTR_FORMAT,
                            _worker_id, p2i((void*) obj));
   }
 
+
   size_t obj_size = obj->size();
   _words_scanned += obj_size;
+
 
   if (scan) {
     obj->oop_iterate(_cm_oop_closure);
   }
+
+
   statsOnly( ++_objs_scanned );
   check_limits();
 }
+
+
+
 
 template void CMTask::process_grey_object<true>(oop);
 template void CMTask::process_grey_object<false>(oop);

@@ -330,9 +330,12 @@ inline bool CMTask::is_below_finger(oop obj, HeapWord* global_finger) const {
 
 
 
+// *** 函数名里面的reference应该和我们说的Java的Reference类无关
 inline void CMTask::make_reference_grey(oop obj, HeapRegion* hr) {
+  // 核心是去更新当前obj地址对应的位图，更新成功才继续
   if (_cm->par_mark_and_count(obj, hr, _marked_bytes_array, _card_bm)) {
 
+    // 默认情况下这个if分支都是false
     if (_cm->verbose_high()) {
       gclog_or_tty->print_cr("[%u] marked object " PTR_FORMAT,
                              _worker_id, p2i(obj));

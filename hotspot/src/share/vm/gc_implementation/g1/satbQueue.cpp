@@ -296,6 +296,9 @@ void SATBMarkQueueSet::filter_thread_buffers() {
 
 bool SATBMarkQueueSet::apply_closure_to_completed_buffer(SATBBufferClosure* cl) {
   BufferNode* nd = NULL;
+
+
+  // 简单理解为就默认拿全局STAB的缓冲区头结点就好了
   {
     MutexLockerEx x(_cbl_mon, Mutex::_no_safepoint_check_flag);
     if (_completed_buffers_head != NULL) {
@@ -306,15 +309,26 @@ bool SATBMarkQueueSet::apply_closure_to_completed_buffer(SATBBufferClosure* cl) 
       if (_n_completed_buffers == 0) _process_completed = false;
     }
   }
+
+
   if (nd != NULL) {
+    // 这对应着实际存储的数组内容
     void **buf = BufferNode::make_buffer_from_node(nd);
+
+
     // Skip over NULL entries at beginning (e.g. push end) of buffer.
     // Filtering can result in non-full completed buffers; see
     // should_enqueue_buffer.
     assert(_sz % sizeof(void*) == 0, "invariant");
+
+
+    // 这里的_sz应该是字节数，limit的含义应该是当前的oop指针上限数量
     size_t limit = ObjPtrQueue::byte_index_to_index((int)_sz);
     for (size_t i = 0; i < limit; ++i) {
+      // 找到第一个非NULL的指针
       if (buf[i] != NULL) {
+        // *** 然后从这个下标开始批量处理剩下的
+        // *** 实际意思走到了SATBBufferClosure的子类CMSATBBufferClosure来完成处理，实现在concurrentMark.cpp TODO
         // Found the end of the block of NULLs; process the remainder.
         cl->do_buffer(buf + i, limit - i);
         break;

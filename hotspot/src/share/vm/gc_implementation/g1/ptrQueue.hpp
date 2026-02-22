@@ -137,10 +137,12 @@ public:
 
   bool is_active() { return _active; }
 
+
   static int byte_index_to_index(int ind) {
     assert((ind % oopSize) == 0, "Invariant.");
     return ind / oopSize;
   }
+
 
   static int index_to_byte_index(int byte_ind) {
     return byte_ind * oopSize;
